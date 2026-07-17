@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RedlineGuard - Rewrite Decision</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Source+Serif+4:wght@500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#93000b",
+                        "surface-bright": "#f8f9ff",
+                        "on-error-container": "#93000a",
+                        "secondary-fixed": "#ffddb1",
+                        "on-tertiary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "error-container": "#ffdad6",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed-dim": "#a3ced4",
+                        "secondary-fixed-dim": "#ecbf7f",
+                        "on-secondary-container": "#795722",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c0c8c9",
+                        "primary": "#002428",
+                        "on-primary-fixed": "#001f23",
+                        "outline": "#717879",
+                        "on-primary-fixed-variant": "#234d52",
+                        "on-tertiary-container": "#ff7265",
+                        "background": "#f8f9ff",
+                        "tertiary-fixed": "#ffdad6",
+                        "on-primary-container": "#7ba5ab",
+                        "surface-dim": "#cbdbf5",
+                        "secondary-container": "#fed08f",
+                        "primary-container": "#0d3b40",
+                        "tertiary-container": "#720006",
+                        "on-tertiary-fixed": "#410002",
+                        "surface-tint": "#3c656a",
+                        "inverse-on-surface": "#eaf1ff",
+                        "on-surface-variant": "#414849",
+                        "tertiary": "#4a0002",
+                        "primary-fixed": "#bfeaf0",
+                        "on-background": "#0b1c30",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "inverse-surface": "#213145",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#5f410c",
+                        "secondary": "#7a5823",
+                        "on-surface": "#0b1c30",
+                        "tertiary-fixed-dim": "#ffb4ab",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a3ced4",
+                        "surface-container-high": "#dce9ff",
+                        "on-secondary-fixed": "#291800",
+                        "surface-container-highest": "#d3e4fe"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "container-max": "1440px",
+                        "margin-page": "40px",
+                        "sidebar-width": "280px",
+                        "gutter": "24px",
+                        "unit": "4px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Hanken Grotesk"],
+                        "label-md": ["Hanken Grotesk"],
+                        "headline-md": ["\"Source Serif 4\""],
+                        "body-sm": ["Hanken Grotesk"],
+                        "headline-lg": ["\"Source Serif 4\""],
+                        "body-md": ["Hanken Grotesk"],
+                        "mono-sm": ["jetbrainsMono"],
+                        "display-lg": ["\"Source Serif 4\""]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "label-md": ["13px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "mono-sm": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .redline-deleted {
+            background-color: #fee2e2;
+            text-decoration: line-through;
+            color: #991b1b;
+        }
+        .redline-added {
+            background-color: #e0f2f1;
+            text-decoration: underline;
+            color: #004d40;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+        .success-toast-animation {
+            animation: slideUp 0.3s ease-out forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-background font-body-md text-on-surface overflow-hidden h-screen flex">
+<!-- SIDE NAV BAR -->
+<aside class="fixed left-0 top-0 bottom-0 flex flex-col w-sidebar-width h-full border-r border-outline-variant bg-surface-container-low dark:bg-surface-container-lowest z-30">
+<div class="p-stack-md flex items-center gap-stack-sm">
+<div class="w-10 h-10 bg-primary flex items-center justify-center rounded">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">gavel</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed leading-none">RedlineGuard</h1>
+<p class="font-label-md text-[10px] uppercase tracking-widest text-outline">Institutional Review</p>
+</div>
+</div>
+<nav class="flex-1 mt-stack-lg px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 transition-all duration-200 ease-in-out text-on-surface-variant dark:text-on-surface-variant/70 hover:bg-surface-container dark:hover:bg-primary-container/10" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Home</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 transition-all duration-200 ease-in-out text-primary dark:text-primary-fixed bg-surface-container-high dark:bg-primary-container/20 border-r-4 border-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Documents</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 transition-all duration-200 ease-in-out text-on-surface-variant dark:text-on-surface-variant/70 hover:bg-surface-container dark:hover:bg-primary-container/10" href="#">
+<span class="material-symbols-outlined">gavel</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Risk Analysis</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 transition-all duration-200 ease-in-out text-on-surface-variant dark:text-on-surface-variant/70 hover:bg-surface-container dark:hover:bg-primary-container/10" href="#">
+<span class="material-symbols-outlined">policy</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Legal Settings</span>
+</a>
+</nav>
+<div class="px-4 mb-stack-lg">
+<button class="w-full bg-primary text-white py-3 rounded font-label-md uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Analysis
+            </button>
+</div>
+<div class="mt-auto border-t border-outline-variant p-4 space-y-2">
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-md text-label-md uppercase">Support</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">info</span>
+<span class="font-label-md text-label-md uppercase">Disclaimer</span>
+</a>
+</div>
+</aside>
+<!-- MAIN CONTENT AREA -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen bg-surface">
+<!-- TOP NAV BAR -->
+<header class="w-full h-16 border-b border-outline-variant bg-surface-container-lowest dark:bg-surface-container-low flex justify-between items-center px-margin-page z-20">
+<div class="flex items-center gap-stack-md">
+<span class="material-symbols-outlined text-outline cursor-pointer">arrow_back</span>
+<h2 class="font-headline-md text-headline-md font-semibold text-primary">Master Service Agreement v.2.4</h2>
+<span class="bg-surface-container-high px-2 py-0.5 rounded text-[11px] font-bold text-primary uppercase tracking-tighter">Review in Progress</span>
+</div>
+<div class="flex items-center gap-stack-lg">
+<div class="hidden lg:flex gap-8">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="font-body-md text-body-md text-primary font-bold border-b-2 border-primary pb-5" href="#">Contracts</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Team</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors" href="#">Archive</a>
+</div>
+<div class="h-8 w-px bg-outline-variant mx-2"></div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">settings</span>
+<div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a legal officer in a corporate setting, soft studio lighting, high-end professional photography style, neutral grey background, crisp detail." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5y0oV8SDkpSRQJ1p1cTENbTpnkODo_bTKjxlXQ-uXQOgwpWG0s0iMdJI8hb_5nonXypVso20VgjFAij8QthIxP8jK04MlZXr9ulXarnaBhzBlNCFaC0iErW_bGCaQuqQZGJhnb8wmzqhoF0WSjjrY5CHw2lFFOY2QC8lRx8dNUv-vET9U2msUbF8iB0kCq6c5j83iIZBx2LW1_xrGZ5275bfEoLtumZ-4YcxNvPxzUoHO-FS1dCrmAFVpBX-Kpv67LSce_TuY0ix6"/>
+</div>
+</div>
+</div>
+</header>
+<!-- CONTENT CANVAS -->
+<div class="flex flex-1 overflow-hidden">
+<!-- DOCUMENT EDITOR (LEFT) -->
+<section class="flex-1 overflow-y-auto bg-surface-bright p-margin-page custom-scrollbar">
+<div class="max-w-4xl mx-auto bg-white shadow-sm border border-outline-variant min-h-[1200px] p-16 font-serif leading-relaxed text-on-surface selection:bg-primary-fixed/30">
+<p class="text-sm font-sans uppercase tracking-widest text-outline mb-12">Section 14. Limitation of Liability</p>
+<h3 class="text-2xl mb-6 font-bold">14.1 General Limitation</h3>
+<p class="mb-8">Except as otherwise provided in this Agreement, neither party shall be liable to the other for any indirect, incidental, special, or consequential damages, including loss of profits, revenue, data, or use, incurred by either party or any third party, whether in an action in contract or tort, even if the other party or any other person has been advised of the possibility of such damages.</p>
+<div class="relative group">
+<div class="absolute -left-8 top-0 bottom-0 w-1 bg-tertiary rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<h3 class="text-2xl mb-6 font-bold text-tertiary">14.2 Aggregate Liability Ceiling</h3>
+<p class="mb-8 p-2 bg-tertiary-container/5 rounded ring-1 ring-tertiary/20">
+                            The maximum aggregate liability of the Consultant to the Client for any and all claims arising out of or relating to this Agreement, regardless of the form of action, shall in <span class="redline-deleted">no event exceed the total amount of fees paid by the Client to the Consultant during the twelve (12) month period immediately preceding the event giving rise to such claim</span>.
+                        </p>
+</div>
+<h3 class="text-2xl mb-6 font-bold">14.3 Carve-outs</h3>
+<p class="mb-8">The limitations of liability set forth in Section 14.1 and 14.2 shall not apply to (a) a party’s indemnification obligations; (b) breaches of confidentiality; or (c) damages caused by a party’s gross negligence or willful misconduct.</p>
+</div>
+</section>
+<!-- REWRITE PANEL (RIGHT) -->
+<section class="w-[500px] border-l border-outline-variant bg-surface-container-low flex flex-col z-10">
+<div class="p-stack-md border-b border-outline-variant flex items-center justify-between bg-white">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">edit_note</span>
+<h4 class="font-label-md text-label-md uppercase tracking-wider text-primary">Rewrite Decision</h4>
+</div>
+<button class="text-outline hover:text-primary">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-stack-md space-y-stack-lg custom-scrollbar">
+<!-- REWRITE COMPARISON -->
+<div class="space-y-stack-md">
+<div class="flex items-center gap-2 text-outline">
+<span class="material-symbols-outlined text-sm">history</span>
+<span class="font-label-md text-[11px] uppercase tracking-widest">Original Wording</span>
+</div>
+<div class="p-4 bg-surface-container-highest/50 border border-outline-variant rounded-lg text-body-sm italic text-on-surface-variant leading-relaxed">
+                            "...in no event exceed the total amount of fees paid by the Client to the Consultant during the twelve (12) month period immediately preceding the event giving rise to such claim."
+                        </div>
+<div class="flex items-center gap-2 text-primary mt-6">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">auto_fix_high</span>
+<span class="font-label-md text-[11px] uppercase tracking-widest">Suggested Rewrite</span>
+</div>
+<div class="p-4 bg-white border-2 border-primary rounded-lg text-body-md font-medium text-primary shadow-sm leading-relaxed">
+                            "...in no event exceed <span class="bg-primary-fixed text-primary px-1 font-bold">three (3) times</span> the total amount of fees paid or <span class="bg-primary-fixed text-primary px-1 font-bold">$500,000</span>, whichever is <span class="bg-primary-fixed text-primary px-1 font-bold">greater</span>."
+                        </div>
+</div>
+<!-- LEGAL REASONING -->
+<div class="p-4 bg-tertiary-container/10 border-l-4 border-tertiary rounded shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-tertiary">
+<span class="material-symbols-outlined text-sm">info</span>
+<h5 class="font-label-md text-label-md uppercase tracking-widest">Why this change</h5>
+</div>
+<p class="text-body-sm text-on-surface-variant leading-snug">
+                            The original 12-month trailing fee cap is overly restrictive for a multi-year institutional engagement. Current market standards for high-value SaaS and consulting agreements typically benchmark against 2-3x multiples or fixed minimums to provide equitable protection for the Client.
+                        </p>
+</div>
+<!-- RISK METRICS -->
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 bg-white border border-outline-variant rounded flex flex-col gap-1">
+<span class="text-[10px] uppercase text-outline font-bold">Risk Level</span>
+<div class="flex items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-error"></div>
+<span class="text-body-md font-bold text-on-surface">Critical</span>
+</div>
+</div>
+<div class="p-3 bg-white border border-outline-variant rounded flex flex-col gap-1">
+<span class="text-[10px] uppercase text-outline font-bold">Market Align</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">trending_up</span>
+<span class="text-body-md font-bold text-on-surface">92%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ACTIONS -->
+<div class="p-stack-md bg-white border-t border-outline-variant space-y-3">
+<button class="w-full bg-primary text-white py-3 rounded font-label-md uppercase tracking-widest hover:bg-primary-container transition-colors flex items-center justify-center gap-2" id="btn-accept">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+                        Accept Rewrite
+                    </button>
+<div class="grid grid-cols-2 gap-3">
+<button class="w-full border border-outline-variant text-on-surface py-3 rounded font-label-md uppercase tracking-widest hover:bg-surface-container transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">edit</span>
+                            Edit
+                        </button>
+<button class="w-full border border-error text-error py-3 rounded font-label-md uppercase tracking-widest hover:bg-error-container/10 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">block</span>
+                            Reject
+                        </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- SUCCESS TOAST OVERLAY -->
+<div class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 hidden" id="success-toast">
+<div class="success-toast-animation bg-primary-container text-white px-8 py-4 rounded-full shadow-2xl flex items-center gap-4 ring-1 ring-primary/50">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-md font-medium tracking-wide">Saved as an example for next time.</span>
+<button class="ml-4 text-primary-fixed/60 hover:text-white transition-colors" onclick="hideToast()">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<!-- SCRIPTS -->
+<script>
+        const btnAccept = document.getElementById('btn-accept');
+        const toast = document.getElementById('success-toast');
+
+        btnAccept.addEventListener('click', () => {
+            // Simulate processing
+            btnAccept.disabled = true;
+            btnAccept.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">progress_activity</span> Processing...';
+            
+            setTimeout(() => {
+                toast.classList.remove('hidden');
+                btnAccept.innerHTML = '<span class="material-symbols-outlined text-sm">check_circle</span> Accept Rewrite';
+                btnAccept.disabled = false;
+                
+                // Auto hide after 4 seconds
+                setTimeout(() => {
+                    hideToast();
+                }, 4000);
+            }, 800);
+        });
+
+        function hideToast() {
+            toast.classList.add('hidden');
+        }
+    </script>
+</body></html>

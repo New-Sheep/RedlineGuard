@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "name": "PortSwigger-ish commercial playbook (demo)",
+  "preferred_governing_law": "England and Wales",
+  "rules": [
+    {
+      "id": "equity_control_cap",
+      "clause_type": "equity_control",
+      "preferred": "Counterparty must not retain majority ownership/control of Licensee",
+      "hard_ceiling": "Never accept >=50% ownership or control by licensor/counterparty",
+      "fallback_text": null,
+      "severity": "high",
+      "match_any": ["50.1%", "50.1 percent", "majority ownership", "maintain.*control"]
+    },
+    {
+      "id": "accelerator_equity_floor",
+      "clause_type": "equity",
+      "preferred": "No automatic accelerator equity with anti-dilution floor without board approval",
+      "hard_ceiling": "Flag seed equity grants bundled into IP licenses",
+      "fallback_text": "Any equity grant to an accelerator shall be subject to Licensee's board approval and shall not include a permanent anti-dilution floor without written waiver.",
+      "severity": "high",
+      "match_any": ["anti-dilution floor", "seed stage equity", "9% seed"]
+    },
+    {
+      "id": "change_of_control_fee",
+      "clause_type": "exit_fee",
+      "preferred": "No change-of-control fee to licensor",
+      "hard_ceiling": "Change-of-control fees require CFO + legal approval",
+      "fallback_text": null,
+      "severity": "medium",
+      "match_any": ["change of control fee", "1% change of control"]
+    },
+    {
+      "id": "governing_law_preferred",
+      "clause_type": "governing_law",
+      "preferred": "England and Wales",
+      "hard_ceiling": "Flag non-UK governing law on vendor/inbound paper",
+      "fallback_text": "This Agreement shall be governed by the laws of England and Wales.",
+      "severity": "medium",
+      "match_any": ["laws of the State of California", "laws of California", "State of Connecticut", "laws of the State of"]
+    },
+    {
+      "id": "uncapped_or_broad_indemnity",
+      "clause_type": "indemnity",
+      "preferred": "Mutual, capped indemnity aligned to fees",
+      "hard_ceiling": "No uncapped or one-sided broad indemnification of university/licensor",
+      "fallback_text": "Each party's aggregate indemnification obligations shall not exceed the fees paid under this Agreement in the twelve (12) months preceding the claim.",
+      "severity": "high",
+      "match_any": ["shall indemnify", "indemnify and hold harmless", "INDEMNIFICATION"]
+    },
+    {
+      "id": "non_negotiable_stamp",
+      "clause_type": "process",
+      "preferred": "Inbound paper should be negotiable",
+      "hard_ceiling": "Documents marked non-negotiable need senior counsel",
+      "fallback_text": null,
+      "severity": "high",
+      "match_any": ["Non-Negotiable", "non-negotiable", "not valid until formal execution"]
+    },
+    {
+      "id": "founders_template_not_vendor",
+      "clause_type": "document_fit",
+      "preferred": "Queue items should be counterparty commercial contracts",
+      "hard_ceiling": "Teaching templates / conversation guides are out of routine vendor review",
+      "fallback_text": null,
+      "severity": "low",
+      "match_any": ["Founders' Agreement Overview", "Conversation Guide", "Model Founders"]
+    }
+  ]
+}

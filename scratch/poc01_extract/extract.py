@@ -1,0 +1,152 @@
+"""POC 01 — PDF extract + text quality gate."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+# Allow `python -m scratch.01_extract.extract` and direct script runs
+_SCRATCH = Path(__file__).resolve().parents[1]
+_ROOT = _SCRATCH.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from scratch._io import (  # noqa: E402
+    CORPUS,
+    ensure_run_dir,
+    print_banner,
+    sync_latest,
+    write_json,
+    write_text,
+)
+
+
+def assess_quality(text: str) -> str:
+    """Return 'ok' or 'poor' based on printable / token heuristics."""
+    import re
+
+    if not text or len(text.strip()) < 80:
+        return "poor"
+    sample = text[:8000]
+    printable = sum(1 for c in sample if c.isprintable() or c in "\n\r\t")
+    ratio = printable / max(len(sample), 1)
+    tokens = sample.split()
+    if not tokens:
+        return "poor"
+    single_char = sum(1 for t in tokens if len(t) == 1)
+    single_ratio = single_char / len(tokens)
+    avg_len = sum(len(t) for t in tokens) / len(tokens)
+
+    def looks_like_word(tok: str) -> bool:
+        letters = sum(c.isalpha() for c in tok)
+        if letters < 2:
+            return False
+        if letters / len(tok) < 0.75:
+            return False
+        if not re.search(r"[aeiouAEIOU]", tok):
+            return False
+        return True
+
+    good_ratio = sum(1 for t in tokens if looks_like_word(t)) / len(tokens)
+
+    # Scanned garbage: few vowel-y letter tokens even if avg length looks fine
+    if ratio < 0.85 or single_ratio > 0.35 or avg_len < 2.8 or good_ratio < 0.55:
+        return "poor"
+    return "ok"
+
+
+def extract_pdf(path: Path | str) -> dict:
+    """Extract text from PDF or plain .txt; assess quality."""
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+
+    suffix = path.suffix.lower()
+    if suffix == ".txt":
+        text = path.read_text(encoding="utf-8", errors="replace")
+        page_count = 1
+    elif suffix == ".pdf":
+        import pdfplumber
+
+        parts: list[str] = []
+        with pdfplumber.open(path) as pdf:
+            page_count = len(pdf.pages)
+            for page in pdf.pages:
+                parts.append(page.extract_text() or "")
+        text = "\n".join(parts)
+    else:
+        raise ValueError(f"Unsupported file type: {suffix}")
+
+    quality = assess_quality(text)
+    return {
+        "source": str(path.resolve()),
+        "filename": path.name,
+        "page_count": page_count,
+        "char_count": len(text),
+        "quality": quality,
+        "text": text,
+    }
+
+
+def preview_markdown(result: dict, max_lines: int = 80) -> str:
+    lines = result["text"].splitlines()
+    head = "\n".join(lines[:max_lines])
+    banner = (
+        f"# Step 01 — Extract preview\n\n"
+        f"- **File:** `{result['filename']}`\n"
+        f"- **Pages:** {result['page_count']}\n"
+        f"- **Chars:** {result['char_count']}\n"
+        f"- **Quality:** **{result['quality']}**\n\n"
+    )
+    if result["quality"] == "poor":
+        banner += (
+            "> Text quality looks poor (possible scan/OCR). "
+            "Do not auto-approve or deep-review until human/OCR pass.\n\n"
+        )
+    banner += "## First lines\n\n```\n" + head + "\n```\n"
+    if len(lines) > max_lines:
+        banner += f"\n_… truncated ({len(lines) - max_lines} more lines in 01_raw.txt)_\n"
+    return banner
+
+
+def run(path: Path | str, run_dir: Path | None = None) -> dict:
+    path = Path(path)
+    result = extract_pdf(path)
+    out = ensure_run_dir(run_dir, path)
+    write_json(
+        out / "01_meta.json",
+        {k: v for k, v in result.items() if k != "text"},
+    )
+    write_text(out / "01_raw.txt", result["text"])
+    write_text(out / "01_preview.md", preview_markdown(result))
+    sync_latest(out)
+    return {**result, "run_dir": str(out)}
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="POC 01: extract PDF text + quality")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=str(CORPUS / "MasterPatentIPLicenseandDevelopmentAgreementVer2.0.pdf"),
+        help="PDF or txt path",
+    )
+    parser.add_argument("--run-dir", type=Path, default=None)
+    args = parser.parse_args(argv)
+
+    print_banner("STEP 01", "EXTRACT")
+    result = run(args.path, args.run_dir)
+    print(f"Source:   {result['filename']}")
+    print(f"Pages:    {result['page_count']}")
+    print(f"Chars:    {result['char_count']}")
+    print(f"Quality:  {result['quality']}")
+    print(f"Artifacts:{result['run_dir']}")
+    print("\n--- preview (first 15 lines) ---")
+    for line in result["text"].splitlines()[:15]:
+        print(line)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

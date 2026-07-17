@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RedlineGuard | Analysis in Progress</title>
+<!-- Google Fonts: Hanken Grotesk & Source Serif 4 -->
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,200..900;1,8..60,200..900&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#d3e4fe",
+                    "on-tertiary-fixed-variant": "#93000b",
+                    "surface-bright": "#f8f9ff",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed": "#ffddb1",
+                    "on-tertiary": "#ffffff",
+                    "surface-container-low": "#eff4ff",
+                    "error-container": "#ffdad6",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#a3ced4",
+                    "secondary-fixed-dim": "#ecbf7f",
+                    "on-secondary-container": "#795722",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c0c8c9",
+                    "primary": "#002428",
+                    "on-primary-fixed": "#001f23",
+                    "outline": "#717879",
+                    "on-primary-fixed-variant": "#234d52",
+                    "on-tertiary-container": "#ff7265",
+                    "background": "#f8f9ff",
+                    "tertiary-fixed": "#ffdad6",
+                    "on-primary-container": "#7ba5ab",
+                    "surface-dim": "#cbdbf5",
+                    "secondary-container": "#fed08f",
+                    "primary-container": "#0d3b40",
+                    "tertiary-container": "#720006",
+                    "on-tertiary-fixed": "#410002",
+                    "surface-tint": "#3c656a",
+                    "inverse-on-surface": "#eaf1ff",
+                    "on-surface-variant": "#414849",
+                    "tertiary": "#4a0002",
+                    "primary-fixed": "#bfeaf0",
+                    "on-background": "#0b1c30",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e5eeff",
+                    "inverse-surface": "#213145",
+                    "on-error": "#ffffff",
+                    "on-secondary-fixed-variant": "#5f410c",
+                    "secondary": "#7a5823",
+                    "on-surface": "#0b1c30",
+                    "tertiary-fixed-dim": "#ffb4ab",
+                    "surface": "#f8f9ff",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#a3ced4",
+                    "surface-container-high": "#dce9ff",
+                    "on-secondary-fixed": "#291800",
+                    "surface-container-highest": "#d3e4fe"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "container-max": "1440px",
+                    "margin-page": "40px",
+                    "sidebar-width": "280px",
+                    "gutter": "24px",
+                    "unit": "4px",
+                    "stack-lg": "32px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Hanken Grotesk"],
+                    "label-md": ["Hanken Grotesk"],
+                    "headline-md": ["\"Source Serif 4\""],
+                    "body-sm": ["Hanken Grotesk"],
+                    "headline-lg": ["\"Source Serif 4\""],
+                    "body-md": ["Hanken Grotesk"],
+                    "mono-sm": ["jetbrainsMono"],
+                    "display-lg": ["\"Source Serif 4\""]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-md": ["13px", {"lineHeight": "16px", "letterSpacing": "0.03em", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "500"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "mono-sm": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #f8f9ff;
+            color: #0b1c30;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .loading-ring {
+            width: 48px;
+            height: 48px;
+            border: 2px solid #c0c8c9;
+            border-top: 2px solid #002428;
+            border-radius: 50%;
+            animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-bar-fill {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md overflow-hidden">
+<!-- TopNavBar (Shared Component) -->
+<header class="w-full h-16 border-b border-outline-variant bg-surface-container-lowest dark:bg-surface-container-low flex justify-between items-center px-margin-page w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-stack-lg">
+<span class="font-headline-md text-headline-md font-semibold text-primary dark:text-primary-fixed">RedlineGuard</span>
+<nav class="hidden md:flex items-center gap-6 h-16">
+<!-- Navigation Items -->
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-1" href="#">Dashboard</a>
+<a class="font-body-md text-body-md text-primary dark:text-primary-fixed font-bold border-b-2 border-primary h-full flex items-center px-1" href="#">Contracts</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-1" href="#">Team</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary transition-colors h-full flex items-center px-1" href="#">Archive</a>
+</nav>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="flex items-center gap-2 mr-4">
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-low transition-colors rounded">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<button class="bg-primary text-white font-label-md px-6 py-2 rounded-sm hover:opacity-90 active:opacity-80 transition-all">
+                Upload Contract
+            </button>
+<div class="ml-2 w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a legal officer in a minimalist studio setting. The lighting is soft and corporate, with a clean, light grey background. The officer is wearing a dark, tailored suit, conveying authority and focus, fitting the modern institutional aesthetic of RedlineGuard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHDVPlcRfPlNMaqwGwF6L4v9wG7dvzEIeSqEFXBxmOGEg_uUFmKOIQWuUE3s3AAewNheL5hZbn95JMDBh4RMgM7Kqo-xPlRp4gmzSEj0RMYYPm-2DJmXUrl1DbybeHiQGrq7DpzUUjSgrvlAp0dONTfp3p-2qRESMeZoO-O_-lQmIaCF2gMzKQfpUZAcg9x4AD4rNEZFbsMjd1LPkbLQzFb86rhvriPYcG3reo4OtS7zNeAewP1wFFa2qo71EoCjbkavTTvP4GMAoV"/>
+</div>
+</div>
+</header>
+<!-- Main Processing Canvas -->
+<main class="flex-grow relative flex flex-col items-center justify-center px-margin-page bg-surface-bright">
+<!-- Subtle Atmospheric Background -->
+<div class="absolute inset-0 z-0 pointer-events-none overflow-hidden opacity-20">
+
+</div>
+<div class="z-10 w-full max-w-xl text-center fade-in-up">
+<!-- Quiet Loading Indicator -->
+<div class="flex justify-center mb-10">
+<div class="loading-ring"></div>
+</div>
+<!-- Analysis Header -->
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Master Service Agreement Analysis</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-12" id="status-text">Reading document...</p>
+<!-- Progress Information -->
+<div class="bg-surface-container-lowest border border-outline-variant p-stack-lg rounded-lg shadow-sm">
+<div class="flex justify-between items-center mb-stack-sm">
+<span class="font-label-md text-label-md uppercase tracking-wider text-outline" id="step-label">Operation 01/02</span>
+<span class="font-mono-sm text-mono-sm text-primary" id="percentage-label">24%</span>
+</div>
+<!-- Progress Track -->
+<div class="w-full h-1 bg-surface-container-low overflow-hidden rounded-full">
+<div class="progress-bar-fill h-full bg-primary" id="progress-fill" style="width: 24%"></div>
+</div>
+<!-- Detail Micro-Updates -->
+<div class="mt-stack-md flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-outline animate-pulse">description</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant italic" id="detail-text">Parsing legal hierarchy...</span>
+</div>
+</div>
+<!-- Summary Preview (Low Contrast) -->
+<div class="mt-stack-lg grid grid-cols-3 gap-gutter opacity-40">
+<div class="flex flex-col items-center p-stack-md border-r border-outline-variant last:border-0">
+<span class="font-label-md text-label-md uppercase text-outline">Total Clauses</span>
+<span class="font-headline-md text-headline-md">--</span>
+</div>
+<div class="flex flex-col items-center p-stack-md border-r border-outline-variant last:border-0">
+<span class="font-label-md text-label-md uppercase text-outline">Risk Profile</span>
+<span class="font-headline-md text-headline-md">--</span>
+</div>
+<div class="flex flex-col items-center p-stack-md border-r border-outline-variant last:border-0">
+<span class="font-label-md text-label-md uppercase text-outline">Est. Time</span>
+<span class="font-headline-md text-headline-md">14s</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer (Shared Component) -->
+<footer class="w-full bg-surface-container-lowest dark:bg-surface-container-low border-t border-outline-variant py-stack-md">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-page w-full max-w-container-max mx-auto">
+<span class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline">© 2024 RedlineGuard. For professional legal review only.</span>
+<div class="flex gap-6 mt-4 md:mt-0">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Regulatory Disclosure</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simulation logic for the processing state
+        const statusText = document.getElementById('status-text');
+        const stepLabel = document.getElementById('step-label');
+        const detailText = document.getElementById('detail-text');
+        const progressFill = document.getElementById('progress-fill');
+        const percentageLabel = document.getElementById('percentage-label');
+
+        let progress = 24;
+        let stage = 1;
+
+        const stage1Details = [
+            "Parsing legal hierarchy...",
+            "Indexing definitions...",
+            "Validating signatures...",
+            "Normalizing formatting..."
+        ];
+
+        const stage2Details = [
+            "Cross-referencing liability caps...",
+            "Identifying termination triggers...",
+            "Auditing indemnity language...",
+            "Scanning for non-compete overlap..."
+        ];
+
+        function updateSimulation() {
+            if (progress < 100) {
+                progress += Math.floor(Math.random() * 5) + 1;
+                if (progress > 100) progress = 100;
+                
+                progressFill.style.width = progress + '%';
+                percentageLabel.innerText = progress + '%';
+
+                // Transition from Stage 1 to Stage 2
+                if (progress > 60 && stage === 1) {
+                    stage = 2;
+                    statusText.innerText = "Looking for risky clauses...";
+                    stepLabel.innerText = "Operation 02/02";
+                }
+
+                // Randomize detail text
+                const currentDetails = stage === 1 ? stage1Details : stage2Details;
+                detailText.innerText = currentDetails[Math.floor(Math.random() * currentDetails.length)];
+            } else {
+                detailText.innerText = "Analysis complete. Preparing summary...";
+                detailText.classList.remove('animate-pulse');
+            }
+        }
+
+        // Run simulation
+        const interval = setInterval(() => {
+            updateSimulation();
+            if (progress >= 100) clearInterval(interval);
+        }, 1200);
+    </script>
+</body></html>
