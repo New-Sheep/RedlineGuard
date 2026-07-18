@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Active playbook — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Active playbook</h1>
+  <p>These are the rules the app uses today. Upload a PDF to propose updates — you review before anything goes live.</p>
+  <p><a class="btn" href="{% url 'review:playbook_import' %}">Import playbook PDF</a></p>
+</section>
+
+<div class="card-form rise-in">
+  <p><strong>{{ playbook.name }}</strong></p>
+  <p class="meta">Preferred governing law: {{ playbook.preferred_governing_law }}</p>
+  <p class="meta">Rules: {{ playbook.rules|length }}</p>
+</div>
+
+{% for rule in playbook.rules %}
+  <article class="card-form rule-card rise-in">
+    <h2>
+      {{ rule.clause_type }}
+      <span class="risk-badge {{ rule.severity|default:'medium' }}">{{ rule.severity|default:"medium"|title }}</span>
+    </h2>
+    <p><strong>Preferred:</strong> {{ rule.preferred }}</p>
+    <p><strong>Hard ceiling:</strong> {{ rule.hard_ceiling }}</p>
+    {% if rule.fallback_text %}
+      <p><strong>Fallback draft:</strong> {{ rule.fallback_text }}</p>
+    {% else %}
+      <p class="meta">No fallback — deviations need a human.</p>
+    {% endif %}
+  </article>
+{% empty %}
+  <div class="card-form rise-in">
+    <p><strong>No active rules yet.</strong></p>
+    <p>The app will not invent company policy. Import a playbook PDF, or keep the demo
+       golden file. Vector memory only reuses <em>past Accept/Edit decisions</em> —
+       it does not replace a playbook.</p>
+    <p><a class="btn" href="{% url 'review:playbook_import' %}">Import playbook PDF</a></p>
+  </div>
+{% endfor %}
+{% endblock %}

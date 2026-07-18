@@ -6,7 +6,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-DraftSource = Literal["memory_precedent", "playbook_fallback", "none"]
+DraftSource = Literal["memory_precedent", "playbook_fallback", "llm_suggested", "none"]
 
 
 class DraftResult(BaseModel):
@@ -16,3 +16,4 @@ class DraftResult(BaseModel):
     draft_source: DraftSource = "none"
     precedent_ids: list[str] = Field(default_factory=list)
     rationale: str = ""
+    provenance: dict = Field(default_factory=dict)

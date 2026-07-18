@@ -38,6 +38,9 @@ class Finding(BaseModel):
     deviation_reason: str
     suggested_counter_proposal: Optional[str] = None
     severity: str = "medium"
+    clause_excerpt: str = ""
+    start_offset: int = 0
+    end_offset: int = 0
 
 
 class ContractReviewReport(BaseModel):
@@ -50,22 +53,31 @@ def load_playbook(path: Path | None = None) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _rule_hits(text: str, rule: dict) -> bool:
+def _first_match_span(text: str, rule: dict) -> tuple[int, int, str]:
+    """Return (start, end, excerpt) for first match_any hit; empty if none."""
     for pat in rule.get("match_any") or []:
         try:
-            if re.search(pat, text, re.IGNORECASE | re.DOTALL):
-                return True
+            m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
         except re.error:
-            if pat.lower() in text.lower():
-                return True
-    return False
+            idx = text.lower().find(str(pat).lower())
+            if idx < 0:
+                continue
+            start = max(0, idx - 120)
+            end = min(len(text), idx + len(pat) + 120)
+            return start, end, text[start:end].strip()
+        if m:
+            start = max(0, m.start() - 120)
+            end = min(len(text), m.end() + 120)
+            return start, end, text[start:end].strip()
+    return 0, 0, ""
 
 
 def compare(text: str, playbook: dict | None = None) -> ContractReviewReport:
     playbook = playbook or load_playbook()
     findings: list[Finding] = []
     for rule in playbook.get("rules") or []:
-        if not _rule_hits(text, rule):
+        start, end, excerpt = _first_match_span(text, rule)
+        if not excerpt:
             continue
         fallback = rule.get("fallback_text")
         if fallback:
@@ -90,10 +102,12 @@ def compare(text: str, playbook: dict | None = None) -> ContractReviewReport:
                 deviation_reason=reason,
                 suggested_counter_proposal=suggestion,
                 severity=rule.get("severity") or "medium",
+                clause_excerpt=excerpt[:2000],
+                start_offset=start,
+                end_offset=end,
             )
         )
 
-    # Score: more/high severity → higher
     score = 10
     for f in findings:
         score += 25 if f.severity == "high" else 15 if f.severity == "medium" else 5

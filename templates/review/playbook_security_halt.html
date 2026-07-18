@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Playbook security halt — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Playbook blocked</h1>
+  <p>This file was not converted into rules. Not legal advice.</p>
+</section>
+
+<div class="alert error">
+  <p><strong>{{ import_obj.filename }}</strong></p>
+  <p>{{ import_obj.error_message }}</p>
+  {% with sec=import_obj.proposed_json.security %}
+    {% if sec.matches %}
+      <p class="meta">Matched cues:</p>
+      <ul>
+        {% for m in sec.matches %}
+          <li><code>{{ m }}</code></li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {% endwith %}
+</div>
+
+<p><a class="btn" href="{% url 'review:playbook_import' %}">Try another playbook</a>
+   <a href="{% url 'review:playbook_active' %}">Active playbook</a></p>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Upload — RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="upload-hero rise-in">
+  <h1>Upload a contract</h1>
+  <p>First-pass check against your company playbook — then decide.</p>
+  <ol class="steps">
+    <li>Security scan</li>
+    <li>Playbook compare</li>
+    <li>Draft counters</li>
+  </ol>
+</section>
+
+<form method="post" enctype="multipart/form-data" class="card-form upload-card rise-in">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="field">
+    <label for="{{ form.sample_key.id_for_label }}">{{ form.sample_key.label }}</label>
+    {{ form.sample_key }}
+    <p class="help">Prefer the Demo — samples for a reliable Loom path.</p>
+  </div>
+  <p class="or">or</p>
+  <div class="field">
+    <label for="{{ form.upload.id_for_label }}">{{ form.upload.label }}</label>
+    {{ form.upload }}
+    {% if form.upload.help_text %}<p class="help">{{ form.upload.help_text }}</p>{% endif %}
+  </div>
+  <button type="submit" class="btn">Analyze contract</button>
+</form>
+{% endblock %}

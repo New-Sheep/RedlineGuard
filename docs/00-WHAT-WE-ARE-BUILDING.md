@@ -33,11 +33,16 @@ Passive AI: “Here’s a summary / some risks.”
 
 That’s how we address “amends we’ve seen before.”
 
+**Setup when there’s no playbook yet:** we don’t invent company policy on the fly. We treat it as onboarding — clear empty state, upload a playbook PDF or a few past contracts, AI proposes rules, Sarah reviews and **activates**. Only then do reviews produce real flags. Memory still helps after findings exist; it doesn’t invent the first checklist.
+
+**Principle:** AI proposes. The playbook decides. The lawyer confirms.
+
 ---
 
 ## The MVP loop
 
 ```
+(If no playbook yet: empty state → propose rules from PDF or past contracts → Sarah activates)
 Upload PDF (or sample)
     → Security: treat text as untrusted (clean + fence before AI)
     → Compare to playbook_config.json
@@ -48,7 +53,7 @@ Upload PDF (or sample)
     → Remember (decision history and/or playbook override)
 ```
 
-**Also must demo:** a nasty sample that tries to trick the AI (“ignore instructions…”) — we block or clearly neutralise it.
+**Also must demo:** a nasty sample that tries to trick the AI (“ignore instructions…”) — we block or clearly neutralise it. Same idea for a **poisoned playbook PDF** — halt; don’t let it become the company rules.
 
 ---
 
@@ -64,7 +69,8 @@ Visuals: [`designs/`](../designs/) — Upload → Processing → Review → Rewr
 | Rewrite | Original vs suggested; Accept / Edit / Reject |
 | Security alert | When injection-style input is caught |
 | History (simple) | Past decisions |
-| Playbook view (nice) | Read-only list of rules we’re checking |
+| Playbook view | Active rules we’re checking |
+| Playbook setup | Empty state → import PDF / past contracts → edit proposal → Activate |
 
 Ignore Stitch’s Dashboard / Team / Archive chrome.
 
@@ -78,6 +84,8 @@ Ignore Stitch’s Dashboard / Team / Archive chrome.
 
 **C — Security:** injection sample does **not** get a silent “all approved.”  
 
+**E — No playbook yet:** empty state explains we can’t flag against *their* standards; upload playbook or past contracts → propose → review → Activate; then Journey A works. Poisoned playbook cannot Activate.
+
 ---
 
 ## What we are *not* building in MVP
@@ -88,11 +96,12 @@ Ignore Stitch’s Dashboard / Team / Archive chrome.
 | Chat with the doc | Wrong product |
 | Fancy multi-step AI agents | After MVP |
 | Full enterprise security (hash chains, SSO, pen-test) | Demo lite + honest README |
-| Editing the golden playbook live from the UI | Use overrides / decision log |
+| Auto-changing the company playbook every time Sarah clicks Accept | Learning goes to memory / overrides; golden playbook only changes when she deliberately Activates a reviewed proposal |
+| Silent “AI risk flags” with no playbook | Trust requires citing company rules |
 | Hosted Railway/Vercel unless they ask | Zip + local is enough |
 | Fake “GDPR certified” badges | Don’t lie |
 
-Details: [01-PRD-MVP.md](01-PRD-MVP.md). How to build: [02-MVP-IMPLEMENTATION.md](02-MVP-IMPLEMENTATION.md).
+Details: [01-PRD-MVP.md](01-PRD-MVP.md). How the running app fits together: [06-PRODUCT-MAP.md](06-PRODUCT-MAP.md). How to build: [02-MVP-IMPLEMENTATION.md](02-MVP-IMPLEMENTATION.md).
 
 ---
 
@@ -103,6 +112,8 @@ Details: [01-PRD-MVP.md](01-PRD-MVP.md). How to build: [02-MVP-IMPLEMENTATION.md
 - [ ] Accept / Edit / Reject + history  
 - [ ] Journey B demable  
 - [ ] Journey C demable  
+- [ ] Empty playbook = onboarding (not crash / not invented flags)  
+- [ ] Propose → Activate human gate (PDF path at minimum)  
 - [ ] Works with fake/offline AI mode  
 - [ ] README: approach, data, security, limits, not legal advice  
 - [ ] Short Loom  
@@ -113,8 +124,10 @@ Details: [01-PRD-MVP.md](01-PRD-MVP.md). How to build: [02-MVP-IMPLEMENTATION.md
 
 | Word | Means |
 |---|---|
-| **Playbook** | JSON file of “how we usually negotiate” (caps, jurisdiction, etc.) |
+| **Playbook** | The company’s written “how we usually negotiate” rules |
+| **Activate** | Sarah confirms a proposed playbook — only then it becomes the live checklist |
 | **Closed-book** | AI may only use the playbook + this contract — not invent policy |
+| **Setup co-pilot** | AI helps draft a starter playbook; Sarah still owns governance |
 | **Fence** | Wrap contract text in tags so the model treats it as data, not orders |
 | **Prompt injection** | Hidden instructions inside a PDF to trick the AI |
 | **Override** | Sarah says “this variation is actually OK” → stored for next time |
@@ -123,6 +136,6 @@ Details: [01-PRD-MVP.md](01-PRD-MVP.md). How to build: [02-MVP-IMPLEMENTATION.md
 
 ## Bottom line
 
-**Upload → check playbook → flag/counter → decide → remember — with a basic shield against hostile PDFs.**
+**Set up the playbook (if needed) → upload → check playbook → flag/counter → decide → remember — with a basic shield against hostile PDFs.**
 
 That’s the take-home. Vision docs are the sequel, not the homework.

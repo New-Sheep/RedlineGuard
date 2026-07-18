@@ -1,0 +1,88 @@
+{
+  "summary": {
+    "chroma_collection": "django_decisions",
+    "chroma_path": "C:\\Users\\ankit\\Documents\\hackathon\\redlineguard\\data\\vector_memory",
+    "chroma_precedent_count": 2,
+    "orm_decision_count": 5,
+    "orm_accept_edit_in_chroma": 2,
+    "note": "Only Accept/Edit with non-empty final_text are written to Chroma. Reject/Override are ORM (and overrides file) only."
+  },
+  "chroma_precedents": [
+    {
+      "chroma_id": "ff81edaf-fd2c-484d-b001-d3a8f512440b",
+      "decision": "accept",
+      "playbook_rule_id": "accelerator_equity_floor",
+      "contract_id": "cf92eb23-17d1-474c-8dd7-d240de31390f",
+      "created_at": "2026-07-17T23:04:15.338083+00:00",
+      "matched_context_stored": "Playbook rule `accelerator_equity_floor` triggered. Preferred: No automatic accelerator equity with anti-dilution floor without board approval. Using playbook fallback counter.",
+      "learned_final_text": "Accepted demo counter-language for testing.",
+      "reasoning": "e2e accept"
+    },
+    {
+      "chroma_id": "a599802c-a9f0-4d10-9e34-431140723903",
+      "decision": "accept",
+      "playbook_rule_id": "equity_control_cap",
+      "contract_id": "fd8ee93c-6dd8-42f8-ac31-1e59a85f1e0b",
+      "created_at": "2026-07-18T13:31:48.011727+00:00",
+      "matched_context_stored": "Playbook rule `equity_control_cap` triggered (Never accept >=50% ownership or control by licensor/counterparty) but no fallback draft - needs human.",
+      "learned_final_text": "Licensee shall retain majority ownership and control of its business. No grant of ownership or voting control at or above fifty percent (50%) to Licensor or its affiliates is permitted without Licensee's prior written board approval.",
+      "reasoning": ""
+    }
+  ],
+  "orm_decisions": [
+    {
+      "action": "accept",
+      "playbook_rule_id": "equity_control_cap",
+      "contract_filename": "standard_supply_goods_contract_template.pdf",
+      "written_to_chroma": true,
+      "chroma_id": "a599802c-a9f0-4d10-9e34-431140723903",
+      "final_text": "Licensee shall retain majority ownership and control of its business. No grant of ownership or voting control at or above fifty percent (50%) to Licensor or its affiliates is permitted without Licensee's prior written board approval.",
+      "reasoning": "",
+      "created_at": "2026-07-18T13:31:48.062180+00:00"
+    },
+    {
+      "action": "reject",
+      "playbook_rule_id": "equity_control_68876f",
+      "contract_filename": "SES-Cyber-Security-Contractual-Clauses-fv1-Sept23.pdf",
+      "written_to_chroma": false,
+      "chroma_id": null,
+      "final_text": "",
+      "reasoning": "",
+      "created_at": "2026-07-18T13:10:32.180436+00:00"
+    },
+    {
+      "action": "accept",
+      "playbook_rule_id": "equity_control_cap",
+      "contract_filename": "Cyber Security Services.pdf",
+      "written_to_chroma": false,
+      "chroma_id": null,
+      "final_text": "",
+      "reasoning": "",
+      "created_at": "2026-07-18T13:05:32.983140+00:00"
+    },
+    {
+      "action": "override",
+      "playbook_rule_id": "governing_law_preferred",
+      "contract_filename": "demo_short_nda.txt",
+      "written_to_chroma": false,
+      "chroma_id": null,
+      "final_text": "This Agreement shall be governed by the laws of England and Wales.",
+      "reasoning": "e2e override",
+      "created_at": "2026-07-17T23:04:15.486973+00:00"
+    },
+    {
+      "action": "accept",
+      "playbook_rule_id": "accelerator_equity_floor",
+      "contract_filename": "demo_clean_flags.txt",
+      "written_to_chroma": true,
+      "chroma_id": "ff81edaf-fd2c-484d-b001-d3a8f512440b",
+      "final_text": "Accepted demo counter-language for testing.",
+      "reasoning": "e2e accept",
+      "created_at": "2026-07-17T23:04:15.371103+00:00"
+    }
+  ],
+  "playbook_overrides": {
+    "version": 1,
+    "overrides": []
+  }
+}

@@ -53,6 +53,9 @@ _COMPACT_PHRASES = [
     "attentionwindow",
     "ipsurrender",
     "transferalltrademarks",
+]
+
+_LLM_EXPORT_COMPACT_PHRASES = [
     "geminigooglecom",
     "chatspark",
 ]
@@ -123,7 +126,23 @@ _INJECTION_PATTERNS = [
         # Extreme IP giveaway often paired with stuffing attacks
         r"\bIP\s+Surrender\b",
         r"transfer\s+all\s+(trademarks|patents|software\s+copyrights)",
-        # LLM chat-export provenance (Gemini UI chrome in "contract" PDFs)
+        # Poisoned "calibration" / few-shot smuggling (esp. fake playbooks)
+        r"system_calibration",
+        r"<\s*system_calibration\s*>",
+        r"ground-truth\s+examples",
+        r"previous\s+audit\s+log",
+        r"attention\s+redlineguard",
+        r"verified,\s+ground-truth",
+        r"you\s+must\s+follow\s+the\s+exact\s+pattern",
+        r"please\s+proceed\s+with\s+your\s+json\s+output",
+    ]
+]
+
+# Contract-upload provenance (Gemini chat screenshots). NOT used for playbook PDFs —
+# those are often exported from Gemini too, without being injection.
+_LLM_EXPORT_CHROME_PATTERNS = [
+    re.compile(p, re.IGNORECASE | re.DOTALL)
+    for p in [
         r"gemini\.google\.com",
         r"\bchat_spark\b",
         r"AI\s+Legal\s+Contract\s+Review\s+Task\s*[-–]\s*Google\s+Gemini",
@@ -201,11 +220,15 @@ def fence(text: str) -> str:
     return f"<untrusted_document>\n{text}\n</untrusted_document>"
 
 
-def detect_injection(text: str) -> dict:
+def detect_injection(text: str, *, include_llm_export_chrome: bool = True) -> dict:
     """Detect prompt-injection / XSS / exfil / obfuscated jailbreaks.
 
     Runs checks on sanitized, letter-deobfuscated, compact, and reassembled
     fragment views so spaced/split attacks still halt.
+
+    include_llm_export_chrome: when True (contract uploads), also halt on
+    Gemini chat-export UI chrome. Playbook PDFs often come from Gemini too,
+    so playbook ingest should pass False and rely on real injection cues.
     """
     sanitized = sanitize(text)
     deob = collapse_char_obfuscation(sanitized)
@@ -226,8 +249,12 @@ def detect_injection(text: str) -> dict:
             seen.add(key)
             hits.append(hit.strip()[:120])
 
+    patterns = list(_INJECTION_PATTERNS)
+    if include_llm_export_chrome:
+        patterns.extend(_LLM_EXPORT_CHROME_PATTERNS)
+
     for view in views:
-        for pat in _INJECTION_PATTERNS:
+        for pat in patterns:
             m = pat.search(view)
             if m:
                 add(m.group(0))
@@ -238,6 +265,10 @@ def detect_injection(text: str) -> dict:
         for phrase in _COMPACT_PHRASES:
             if phrase in compact:
                 add(f"[compact]{phrase}")
+        if include_llm_export_chrome:
+            for phrase in _LLM_EXPORT_COMPACT_PHRASES:
+                if phrase in compact:
+                    add(f"[compact]{phrase}")
 
     stuffing = detect_repetition_stuffing(sanitized)
     if stuffing:
@@ -252,6 +283,11 @@ def detect_injection(text: str) -> dict:
             else "No obvious injection patterns detected."
         ),
     }
+
+
+def detect_playbook_injection(text: str) -> dict:
+    """Security gate for playbook PDFs (no Gemini-chrome false positives)."""
+    return detect_injection(text, include_llm_export_chrome=False)
 
 
 def run_on_text(text: str, source_name: str = "input") -> dict:

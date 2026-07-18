@@ -55,6 +55,8 @@ class DecisionStore:
             "playbook_rule_id": record.playbook_rule_id or "",
             "contract_id": record.contract_id,
             "reasoning": (record.reasoning or "")[:500],
+            "filename": (record.filename or "")[:512],
+            "doc_kind": (record.doc_kind or "")[:64],
             "created_at": record.created_at,
             "record_json": record.model_dump_json(),
         }
@@ -66,6 +68,74 @@ class DecisionStore:
         )
         return record
 
+    def delete_decision(self, record_id: str) -> bool:
+        """Remove a precedent by id. Returns True if collection still usable."""
+        try:
+            self._col.delete(ids=[record_id])
+            return True
+        except Exception:
+            return False
+
+    def get_decision(self, record_id: str) -> Optional[DecisionRecord]:
+        try:
+            raw = self._col.get(
+                ids=[record_id],
+                include=["documents", "metadatas"],
+            )
+        except Exception:
+            return None
+        ids = raw.get("ids") or []
+        if not ids:
+            return None
+        metas = raw.get("metadatas") or []
+        docs = raw.get("documents") or []
+        return self._record_from_row(ids[0], docs[0] if docs else "", metas[0] if metas else {})
+
+    def list_decisions(self, limit: int = 200) -> list[DecisionRecord]:
+        if self.count() == 0:
+            return []
+        raw = self._col.get(
+            include=["documents", "metadatas"],
+            limit=min(limit, max(self.count(), 1)),
+        )
+        ids = raw.get("ids") or []
+        metas = raw.get("metadatas") or []
+        docs = raw.get("documents") or []
+        out: list[DecisionRecord] = []
+        for i, _id in enumerate(ids):
+            out.append(
+                self._record_from_row(
+                    _id,
+                    docs[i] if i < len(docs) else "",
+                    metas[i] if i < len(metas) else {},
+                )
+            )
+        out.sort(key=lambda r: r.created_at or "", reverse=True)
+        return out
+
+    def _record_from_row(
+        self, _id: str, doc: str, meta: dict | None
+    ) -> DecisionRecord:
+        meta = meta or {}
+        record_json = meta.get("record_json")
+        if record_json:
+            try:
+                return DecisionRecord.model_validate_json(record_json)
+            except Exception:
+                pass
+        return DecisionRecord(
+            id=_id,
+            clause_text=doc or "",
+            decision=meta.get("decision") or "accept",
+            final_text=meta.get("final_text") or "",
+            playbook_rule_id=meta.get("playbook_rule_id") or None,
+            contract_id=meta.get("contract_id") or "unknown",
+            reasoning=meta.get("reasoning") or None,
+            filename=meta.get("filename") or None,
+            doc_kind=meta.get("doc_kind") or None,
+            created_at=meta.get("created_at") or "",
+        )
+
     def search_precedents(
         self,
         query: str,
@@ -75,9 +145,11 @@ class DecisionStore:
         if self.count() == 0:
             return []
         emb = self.embedder.embed([query])[0]
+        # Fetch extra so rule-filter / reject filtering still has candidates
+        n = min(max(top_k * 4, top_k), self.count())
         kwargs: dict = {
             "query_embeddings": [emb],
-            "n_results": min(top_k, self.count()),
+            "n_results": n,
             "include": ["documents", "metadatas", "distances"],
         }
         if playbook_rule_id:
@@ -100,22 +172,11 @@ class DecisionStore:
         docs = (raw.get("documents") or [[]])[0]
 
         for i, _id in enumerate(ids):
-            meta = metas[i] or {}
-            record_json = meta.get("record_json")
-            if record_json:
-                record = DecisionRecord.model_validate_json(record_json)
-            else:
-                record = DecisionRecord(
-                    id=_id,
-                    clause_text=docs[i] or "",
-                    decision=meta.get("decision") or "accept",
-                    final_text=meta.get("final_text") or "",
-                    playbook_rule_id=meta.get("playbook_rule_id") or None,
-                    contract_id=meta.get("contract_id") or "unknown",
-                    reasoning=meta.get("reasoning") or None,
-                    created_at=meta.get("created_at") or "",
-                )
-            # If we filtered by rule id in where, keep; else prefer same rule when ranking
+            record = self._record_from_row(
+                _id,
+                docs[i] if docs and i < len(docs) else "",
+                metas[i] if metas and i < len(metas) else {},
+            )
             hits.append(
                 PrecedentHit(
                     record=record,

@@ -19,6 +19,8 @@ class DecisionRecord(BaseModel):
     playbook_rule_id: Optional[str] = None
     contract_id: str = "unknown"
     reasoning: Optional[str] = None
+    filename: Optional[str] = None
+    doc_kind: Optional[str] = None
     created_at: str = Field(
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )

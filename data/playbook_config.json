@@ -1,70 +1,62 @@
 {
   "version": 1,
-  "name": "PortSwigger-ish commercial playbook (demo)",
+  "name": "Imported playbook (Sample Playbook4.pdf)",
   "preferred_governing_law": "England and Wales",
   "rules": [
     {
-      "id": "equity_control_cap",
-      "clause_type": "equity_control",
-      "preferred": "Counterparty must not retain majority ownership/control of Licensee",
-      "hard_ceiling": "Never accept >=50% ownership or control by licensor/counterparty",
-      "fallback_text": null,
-      "severity": "high",
-      "match_any": ["50.1%", "50.1 percent", "majority ownership", "maintain.*control"]
-    },
-    {
-      "id": "accelerator_equity_floor",
-      "clause_type": "equity",
-      "preferred": "No automatic accelerator equity with anti-dilution floor without board approval",
-      "hard_ceiling": "Flag seed equity grants bundled into IP licenses",
-      "fallback_text": "Any equity grant to an accelerator shall be subject to Licensee's board approval and shall not include a permanent anti-dilution floor without written waiver.",
-      "severity": "high",
-      "match_any": ["anti-dilution floor", "seed stage equity", "9% seed"]
-    },
-    {
-      "id": "change_of_control_fee",
-      "clause_type": "exit_fee",
-      "preferred": "No change-of-control fee to licensor",
-      "hard_ceiling": "Change-of-control fees require CFO + legal approval",
-      "fallback_text": null,
-      "severity": "medium",
-      "match_any": ["change of control fee", "1% change of control"]
-    },
-    {
-      "id": "governing_law_preferred",
+      "id": "governing_law_09acec",
       "clause_type": "governing_law",
       "preferred": "England and Wales",
-      "hard_ceiling": "Flag non-UK governing law on vendor/inbound paper",
+      "hard_ceiling": "Flag non-UK governing law without Head of Legal approval",
       "fallback_text": "This Agreement shall be governed by the laws of England and Wales.",
       "severity": "medium",
-      "match_any": ["laws of the State of California", "laws of California", "State of Connecticut", "laws of the State of"]
+      "match_any": [
+        "laws of the State of California",
+        "laws of California",
+        "State of New York",
+        "laws of the State of",
+        "Delaware"
+      ]
     },
     {
-      "id": "uncapped_or_broad_indemnity",
-      "clause_type": "indemnity",
-      "preferred": "Mutual, capped indemnity aligned to fees",
-      "hard_ceiling": "No uncapped or one-sided broad indemnification of university/licensor",
-      "fallback_text": "Each party's aggregate indemnification obligations shall not exceed the fees paid under this Agreement in the twelve (12) months preceding the claim.",
+      "id": "ip_ownership_015ca1",
+      "clause_type": "ip_ownership",
+      "preferred": "Retain 100% ownership of background IP; customer gets limited license",
+      "hard_ceiling": "Never assign or transfer background IP / software copyrights",
+      "fallback_text": "PortSwigger retains all rights, title, and interest in its pre-existing Intellectual Property. Customer is granted a limited license to use deliverables as intended.",
       "severity": "high",
-      "match_any": ["shall indemnify", "indemnify and hold harmless", "INDEMNIFICATION"]
+      "match_any": [
+        "assign all intellectual property",
+        "transfer ownership of",
+        "IP Surrender",
+        "work made for hire"
+      ]
     },
     {
-      "id": "non_negotiable_stamp",
-      "clause_type": "process",
-      "preferred": "Inbound paper should be negotiable",
-      "hard_ceiling": "Documents marked non-negotiable need senior counsel",
+      "id": "confidentiality_term_c94c6d",
+      "clause_type": "confidentiality",
+      "preferred": "Confidentiality term of 3\u20135 years after termination",
+      "hard_ceiling": "No perpetual/indefinite confidentiality except trade secrets",
+      "fallback_text": "Confidentiality obligations shall survive for three (3) years from the date of disclosure (except for Trade Secrets, which remain protected while they qualify as such).",
+      "severity": "medium",
+      "match_any": [
+        "perpetual confidentiality",
+        "indefinite confidentiality",
+        "in perpetuity"
+      ]
+    },
+    {
+      "id": "equity_control_222bda",
+      "clause_type": "equity_control",
+      "preferred": "Counterparty must not retain majority ownership/control",
+      "hard_ceiling": "Never accept >=50% ownership or control by counterparty",
       "fallback_text": null,
       "severity": "high",
-      "match_any": ["Non-Negotiable", "non-negotiable", "not valid until formal execution"]
-    },
-    {
-      "id": "founders_template_not_vendor",
-      "clause_type": "document_fit",
-      "preferred": "Queue items should be counterparty commercial contracts",
-      "hard_ceiling": "Teaching templates / conversation guides are out of routine vendor review",
-      "fallback_text": null,
-      "severity": "low",
-      "match_any": ["Founders' Agreement Overview", "Conversation Guide", "Model Founders"]
+      "match_any": [
+        "50.1%",
+        "majority ownership",
+        "maintain control"
+      ]
     }
   ]
 }

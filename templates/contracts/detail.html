@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}{{ contract.filename }} — RedlineGuard{% endblock %}
+{% block content %}
+<p><a href="{% url 'contracts:upload' %}">&larr; New upload</a></p>
+
+<section class="hero">
+  <h1>{{ contract.filename }}</h1>
+  <p class="meta">
+    Status: <strong>{{ contract.get_status_display }}</strong>
+    · Source: {{ contract.get_source_display }}
+    · Quality: <strong>{{ contract.quality|default:"n/a" }}</strong>
+    · Pages: {{ contract.page_count }}
+    · Chars: {{ contract.char_count }}
+  </p>
+</section>
+
+{% if contract.status == "failed" %}
+  <div class="alert error">
+    <strong>Extract failed</strong>
+    <pre>{{ contract.error_message }}</pre>
+  </div>
+{% else %}
+  <section class="preview">
+    <h2>Extracted text{% if truncated %} (preview){% endif %}</h2>
+    <pre class="doc-text">{{ preview }}</pre>
+    {% if truncated %}
+      <p class="help">Showing first {{ preview|length }} of {{ contract.char_count }} characters.</p>
+    {% endif %}
+  </section>
+{% endif %}
+{% endblock %}

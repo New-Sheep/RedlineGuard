@@ -67,6 +67,7 @@ Every LLM user/data message that includes contract body must use **sanitized + f
 - Load `playbook_config.json` at process/compare time  
 - Merge `playbook_overrides.json` if present (overrides win on same `clause_type` / id)  
 - **Never** hardcode liability caps / jurisdictions in Python  
+- If missing file or `rules: []` → treat as **empty playbook** (Journey E), not as “invent flags”
 
 Example rule fields:
 
@@ -80,6 +81,20 @@ Example rule fields:
   "severity": "high"
 }
 ```
+
+### 3.2b Playbook onboarding (Journey E) — Must empty-state; Should AI assist
+
+| Piece | Behaviour |
+|---|---|
+| Empty state | Clear copy + CTAs: upload firm PDF, or draft starter from 3–5 past contracts |
+| PDF import (E1) | Extract → playbook security gate → propose rules (Fake / LLM) → edit UI → **Activate** |
+| Past contracts (E2) | Upload liked/disliked NDAs → propose starter playbook → same review → Activate |
+| Labels | “Proposed — not active yet” vs active company playbook |
+| Activate | Backup prior golden file; write only after confirm; never from Accept clicks |
+| Halt | Poisoned playbook → cannot Activate |
+| Thin playbook (Could) | Suggest new rules from decision gaps → still Activate |
+
+**Principle:** AI proposes. Playbook decides. Lawyer confirms. Memory does not invent the first checklist.
 
 ### 3.3 `apps/review/` — Must
 
@@ -107,7 +122,9 @@ Example rule fields:
 
 ### 3.5 UI — Must
 
-Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
+Four Stitch-inspired screens + Security Alert + History + Playbook view / setup (empty state, import, review, Activate). No Team/Archive nav.
+
+When playbook is empty: Review/Upload should nudge setup — do **not** show fake playbook-grounded flags.
 
 ---
 
@@ -117,6 +134,7 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 
 - Return fixtures keyed by sample id (clean vs injection)  
 - Injection fixture → security path triggers **before** or instead of “all approved”  
+- Playbook bootstrap fixtures for E1/E2 (proposed rules without API keys)  
 - Lets reviewers run with zero API keys  
 
 ---
@@ -131,9 +149,10 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 | 4 | Rewrite panel + Accept/Edit/Reject + DB history | P1 / A |
 | 5 | Real LLM playbook compare behind interface; keep FAKE | P2 |
 | 6 | Journey B (B1 and/or B2) | P3 |
-| 7 | Playbook read-only view, README, Loom | P4 |
+| 7 | Empty-playbook UX + PDF import → edit → Activate (+ playbook security halt) | P4 / E1 |
+| 8 | Starter from past contracts (E2) if time; README, Loom | P5 |
 
-**Stop rules:** If behind on time, cut Coulds (bootstrap script, PII, manual flag-missed). Never cut Journey A or C. Prefer cutting B1 *or* B2, not both.
+**Stop rules:** If behind on time, cut Coulds (thin-playbook suggestions, PII, manual flag-missed). Prefer shipping **E1** over **E2**. Never cut Journey A or C. Prefer cutting B1 *or* B2, not both. Never ship silent invented flags when playbook is empty.
 
 ---
 
@@ -141,6 +160,8 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 
 - `sanitize` / `fence` round-trip  
 - Playbook load + override merge  
+- Empty playbook → no invented hard flags / empty-state path  
+- Playbook import halt cannot Activate  
 - Pydantic rejects malformed LLM payload  
 - Injection fixture hits detect or fails closed in FAKE mode  
 - Decision persistence  
@@ -149,11 +170,11 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 
 ## 7. README must say (for PortSwigger)
 
-1. Problem understanding + approach (playbook compiler + memory)  
+1. Problem understanding + approach (playbook compiler + memory + setup co-pilot)  
 2. Data: what samples/precedents/playbook contain  
 3. Workflow + screenshots or Loom link  
-4. Security: fence, sanitize, injection demo, privacy limits  
-5. Governance: edit JSON / overrides without code deploy  
+4. Security: fence, sanitize, injection demo, playbook import halt, privacy limits  
+5. Governance: Activate after review; overrides / decisions without auto-mutating golden from Accepts  
 6. How to run + `FAKE_LLM=1`  
 7. What’s unfinished (honest)  
 8. Not legal advice  
@@ -169,10 +190,10 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 | Pydantic fail-safe | **Adopt** |
 | Closed-book compiler prompt | **Adopt** |
 | Override & accept → learn | **Adopt** via overrides file / decisions |
-| Precedent mining bootstrap script | **Could** — hand playbook first |
+| Bootstrap playbook from PDF / few precedents | **Adopt** as Journey E (propose → Activate); not unattended corpus mining |
 | Streamlit `app.py` | **Reject** |
 | LangChain-required | **Reject** as requirement (thin SDK OK) |
-| Mutate golden playbook in UI | **Reject** |
+| Auto-mutate golden playbook from every Accept | **Reject** — Activate after review only |
 
 ---
 
@@ -182,7 +203,7 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 |---|---|
 | Django + templates | **Prefer** |
 | ReAct draft agent | **Defer** |
-| Chroma learning loop at scale | **Defer** (simple decision examples OK) |
+| Chroma learning loop at scale | **Defer** (simple decision examples OK; memory ≠ invent playbook) |
 | Hash-chain audit / full PII / local router | **Defer** (document only) |
 | Docker Compose | Optional convenience |
 
@@ -190,4 +211,4 @@ Four Stitch-inspired screens + Security Alert + History. No Team/Archive nav.
 
 ## Bottom line
 
-Implement a **Django demo** that is a **playbook-grounded, fenced, decision-remembering** review loop. Anything that smells like a second architecture or a security PhD is out until the Loom is boringly reliable.
+Implement a **Django demo** that is a **playbook-grounded, fenced, decision-remembering** review loop — with **onboarding when there’s no playbook** (AI proposes, lawyer activates). Anything that smells like a second architecture, a silent policy engine, or a security PhD is out until the Loom is boringly reliable.

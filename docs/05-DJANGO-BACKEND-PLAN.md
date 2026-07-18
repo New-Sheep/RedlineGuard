@@ -145,9 +145,13 @@ Pydantic (or serializers) at the boundary — fail closed, no silent junk.
 | `/contracts/<uuid>/rewrite/<finding_id>/` | Rewrite + Accept/Edit/Reject |
 | `/security/<uuid>/` | Security alert (halt) |
 | `/history/` | Decision history |
-| `/playbook/` | Read-only playbook |
+| `/playbook/` | Active playbook **or** empty-state onboarding |
+| `/playbook/import/` | Upload firm playbook PDF (E1) |
+| `/playbook/import/<uuid>/` | Review / edit proposed rules |
+| `/playbook/import/<uuid>/activate/` | Human gate → write golden file |
+| `/playbook/starter/` *(Should)* | Upload 3–5 past contracts (E2) → propose starter |
 
-Designs: [`designs/`](../designs/) — ignore Team/Archive chrome.
+Designs: [`designs/`](../designs/) — ignore Team/Archive chrome. Empty playbook copy per PRD §9.3.
 
 ---
 
@@ -157,10 +161,14 @@ Designs: [`designs/`](../designs/) — ignore Team/Archive chrome.
 |---|---|
 | `ReviewPipeline.run(contract_id)` | extract → security → triage → playbook → retrieve → draft → persist run |
 | `SecurityGate` | wrap scratch detect; on halt persist `SecurityEvent` and stop |
-| `PlaybookService` | load `playbook_config.json` + merge overrides |
-| `VectorMemoryPort` | Chroma add/search; Hash vs MiniLM via env |
+| `PlaybookService` | load `playbook_config.json` + merge overrides; expose `empty` when no rules |
+| `PlaybookImportService` | extract PDF → playbook security gate → propose rules (Fake/LLM) → edit → **Activate** (backup + write golden) |
+| `PlaybookStarterService` *(Should)* | from 3–5 past contracts → propose starter → same Activate path |
+| `VectorMemoryPort` | Chroma add/search; Hash vs MiniLM via env — **does not** invent first checklist |
 | `DraftEngine` | Fake first; LLM later behind same interface |
 | `DecisionService` | Accept/Edit/Reject → ORM transaction then Chroma |
+
+**Empty playbook:** pipeline may extract + security-check, but must not invent playbook-grounded findings — surface setup CTA instead.
 
 **Sync first.** Optional: mark `processing` and finish in `transaction.on_commit` — no Celery for MVP.
 
@@ -170,8 +178,8 @@ Designs: [`designs/`](../designs/) — ignore Team/Archive chrome.
 
 | Variable | Meaning |
 |---|---|
-| `FAKE_EMBED=1` | Hash embeddings (tests / offline) |
-| `FAKE_EMBED=0` | MiniLM (real learning) |
+| `FAKE_EMBED=0` | MiniLM (default for `runserver` / demos) |
+| `FAKE_EMBED=1` | Hash embeddings (tests / offline; auto when `manage.py test`) |
 | `FAKE_LLM=1` | Fixture structured review / draft *(when LLM path lands)* |
 | `DATABASE_URL` / default SQLite | Local demo |
 | `CHROMA_PATH` | Default `data/vector_memory/` |
@@ -188,8 +196,9 @@ Designs: [`designs/`](../designs/) — ignore Team/Archive chrome.
 4. Playbook compare → `Finding` rows + Review page  
 5. `Draft` + Rewrite page + `DecisionService` (ORM history)  
 6. Wire Chroma retrieve into pipeline (prove Journey B)  
-7. Polish: Processing poll, History, Playbook view, README offline path  
-8. Optional: `FAKE_LLM` / real LLM draft; overrides (B2)  
+7. **Journey E:** empty-state + PDF import → security → propose → edit → Activate (+ poisoned playbook halt)  
+8. Polish: Processing poll, History, README offline path  
+9. Optional: E2 starter from past contracts; `FAKE_LLM` / real LLM draft; overrides (B2); thin-playbook suggestions  
 
 Each step should stay demable on Loom.
 
@@ -200,7 +209,8 @@ Each step should stay demable on Loom.
 From PRD Won’t list — do not sneak in:
 
 - Microservices / Celery / Redis  
-- Live rewrite of golden `playbook_config.json`  
+- Auto-mutate golden `playbook_config.json` from Accept / Edit / Reject (Activate after review is **in** scope)  
+- Silent invented findings when playbook is empty  
 - ReAct / multi-agent draft graph  
 - SSO / full RBAC  
 - Hosted deploy theatre  
@@ -213,6 +223,8 @@ From PRD Won’t list — do not sneak in:
 - [ ] Journey A: sample/upload → flags citing playbook → Accept  
 - [ ] Journey B: second similar contract shows `draft_source=memory_precedent` (or override path)  
 - [ ] Journey C: malicious/injection sample → security alert, no silent approve, no Chroma write  
+- [ ] Journey E: empty playbook → onboarding CTAs; no invented hard flags  
+- [ ] Playbook PDF propose → Activate; halted poison cannot Activate  
 - [ ] History shows past decisions  
 - [ ] Scratch pytest still green; Django can call the same security/playbook/memory logic  
 - [ ] README: not legal advice, how to run with `FAKE_*`  
@@ -224,7 +236,7 @@ From PRD Won’t list — do not sneak in:
 | Doc | Role |
 |---|---|
 | [`04-SCRATCH-FOUNDATION.md`](04-SCRATCH-FOUNDATION.md) | What already works to port |
-| [`01-PRD-MVP.md`](01-PRD-MVP.md) | Must/Should/Won’t |
+| [`01-PRD-MVP.md`](01-PRD-MVP.md) | Must/Should/Won’t (incl. Journey E / setup co-pilot) |
 | [`02-MVP-IMPLEMENTATION.md`](02-MVP-IMPLEMENTATION.md) | Earlier implementation sketch |
 | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) | Plain English product |
 | [`scratch/README.md`](../scratch/README.md) | How to re-prove seams |

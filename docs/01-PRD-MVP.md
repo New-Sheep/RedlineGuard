@@ -5,8 +5,8 @@
 | **Product** | RedlineGuard |
 | **Document type** | MVP PRD (source of truth for what we ship) |
 | **Audience** | Builder(s), PortSwigger AI Pioneer take-home reviewers |
-| **Status** | Active — incorporates playbook / security / learning synthesis |
-| **Last updated** | 2026-07-16 |
+| **Status** | Active — incorporates playbook / security / learning / playbook-onboarding UX |
+| **Last updated** | 2026-07-17 |
 | **Related docs** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`02-MVP-IMPLEMENTATION.md`](02-MVP-IMPLEMENTATION.md) · [`designs/`](../designs/) · [`gemini_brainstorm.md`](gemini_brainstorm.md) (raw ideas; see adopted/deferred) · [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) (post-MVP vision only) |
 
 **Conflict rule:** This PRD beats `CLAUDE_PORTSWIGGER.md`, Visual Companion, and `gemini_brainstorm.md` for scope. Vision ideas not listed as **Must** / **Should** below are **out of MVP**.
@@ -30,6 +30,10 @@ Security is part of the product story (hostile PDFs, prompt injection), but **li
 *Upload → check against playbook → flag + counter → decide → remember.*
 
 **AI as multiplier (not passive summariser):** the playbook + human decisions compound; the model is a compliance compiler against *our* rules, not a free-form legal oracle.
+
+**Setup co-pilot (not fake policy engine):** when there is no playbook yet, AI may **propose** a starter playbook from a PDF or a few past contracts — but Sarah must **review and activate** before reviews produce “real” flags. Past Accept / Edit / Reject memory never invents the first checklist.
+
+**Product principle:** *AI proposes. The playbook decides. The lawyer confirms.*
 
 ---
 
@@ -80,6 +84,8 @@ Security is part of the product story (hostile PDFs, prompt injection), but **li
 | G6 | Journey C: injection-style sample is blocked or clearly ignored | Security alert / log |
 | G7 | Honest README: not legal advice, privacy/security limits, how to run offline | README |
 | G8 | `FAKE_LLM=1` path for reviewers without API keys | Documented |
+| G9 | Empty / missing playbook is an **onboarding moment**, not a broken review | Empty-state UX + no silent invented flags |
+| G10 | AI-assisted playbook setup always ends in a **human gate** (review → activate) | Cannot activate halted / unreviewed proposals |
 
 ### 4.2 Non-goals (explicit Won’t for MVP)
 
@@ -90,8 +96,9 @@ Security is part of the product story (hostile PDFs, prompt injection), but **li
 | ReAct / multi-agent tool-calling draft engine | Post-MVP learning goal |
 | Full SSO / OIDC / RBAC | Demo doesn’t need it |
 | Hash-chain audit, field encryption, CSP hardening suite | Document intent; don’t build all |
-| Live rewrite of golden `playbook_config.json` from UI | Use overrides / decision log instead |
-| Auto “precedent mining” of a large corpus as Day-1 blocker | Hand-authored playbook first |
+| Auto-mutate golden playbook from Accept / Edit / Reject clicks | Learning goes to decision memory / overrides; golden file changes only via deliberate **Activate** after review |
+| Silently invent “real” risk flags when no playbook is active | Empty state + setup co-pilot instead — trust depends on citing company rules |
+| Unattended mining of a large contract corpus as Day-1 blocker | Starter from PDF **or** 3–5 past contracts is enough for demo; big corpus mining is post-MVP |
 | Hosted deploy (Railway/Vercel/etc.) unless they ask | Brief asks for a zip |
 | Fake trust badges (AES-256 / GDPR certified) | Don’t claim unbuilt controls |
 | Guaranteeing legal correctness | Assistant only |
@@ -126,6 +133,30 @@ Pick **one** demable path (both nice if time):
 
 - Simple view of current playbook rules (read-only panel or page) so governance is visible  
 
+### Journey E — Playbook onboarding (**Must** for empty state; **Should** for AI assist)
+
+Treat “no playbook” as **setup**, not failure.
+
+1. Sarah lands on Upload or Playbook with **no active rules** (missing file or empty `rules`)  
+2. Clear empty state: *“We don’t have your playbook yet, so we can’t reliably flag risk against your standards.”*  
+3. Helpful next steps (pick one path for the demo if time-boxed):  
+   - **E1 — PDF playbook:** upload the firm’s playbook PDF → AI (or fake) proposes rules → Sarah edits → confirms → **Activate**  
+   - **E2 — Past contracts:** upload 3–5 NDAs she liked / didn’t like → AI proposes a **starter** playbook → same review → Activate  
+4. Until Activate: contract review may still run extract/security, but must **not** show invented playbook-grounded flags (empty / soft “set up playbook first” CTA)  
+5. Hostile playbook PDFs: security fencing → **halt**; cannot Activate  
+
+**Thin playbook (nice / Could):** after some decisions, offer “suggested new rules” from gaps lawyers keep hitting — still review → Activate, never silent write.
+
+**Where AI shines (product framing):**
+
+| Moment | Feeling |
+|---|---|
+| PDF playbook, hate editing JSON by hand | “Upload it — we’ll propose rules; you approve.” |
+| No playbook at all | “Upload a few past NDAs — we’ll propose a starter; you approve.” |
+| Thin playbook | “We noticed gaps — want suggested new rules?” (still Activate) |
+| Playbook already active | Better counters / explanations **citing those rules** (happy path) |
+| After Accept / Edit / Reject | “We’ve handled something like this before” — memory, not inventing the checklist |
+
 ---
 
 ## 6. Functional requirements
@@ -151,9 +182,15 @@ Pick **one** demable path (both nice if time):
 | F17 | Read-only playbook viewer | Should |
 | F18 | `playbook_overrides.json` from Override action | Should |
 | F19 | Seed 2–3 accepted precedents used as draft examples | Should |
-| F20 | Offline script to *assist* drafting playbook from a PDF or few precedents | Could |
+| F20 | Assist drafting a **proposed** playbook from a PDF (import → edit → Activate) | Should |
 | F21 | PII redaction before cloud calls | Could |
-| F22 | Manual “flag missed clause” → suggest new rule | Could |
+| F22 | Manual “flag missed clause” → suggest new rule (still Activate to golden) | Could |
+| F23 | Empty / missing playbook: dedicated empty-state copy + CTAs (import PDF / starter from past contracts); no invented hard flags | Must |
+| F24 | Playbook import security: fence/detect on playbook text; halted imports cannot Activate | Must |
+| F25 | Human gate: Activate writes golden `playbook_config.json` only after review (+ optional confirm checkbox); backup prior file | Must |
+| F26 | Starter playbook from 3–5 past contracts (liked / disliked) → same propose → review → Activate flow | Should |
+| F27 | Thin-playbook “suggested new rules” from decision gaps | Could |
+| F28 | Labels that distinguish **proposed / AI-drafted** rules vs **active company playbook** | Should |
 
 ---
 
@@ -201,7 +238,7 @@ Pick **one** demable path (both nice if time):
 | 3 | Review | Doc + flags (cite playbook rule) |
 | 4 | Rewrite / decision | Original vs suggested; Accept / Edit / Reject; optional Override |
 
-Plus: Security Alert state (modal or page) for Journey C; simple History; optional Playbook view.
+Plus: Security Alert state (modal or page) for Journey C; simple History; Playbook view + **import / review / activate** onboarding; empty-state when no active rules.
 
 ### 9.2 Principles
 
@@ -209,7 +246,22 @@ Plus: Security Alert state (modal or page) for Journey C; simple History; option
 2. Every flag cites a **playbook rule** when possible  
 3. Don’t invent counters without fallback  
 4. Don’t claim unbuilt security certifications  
-5. Ignore Stitch nav chrome (Dashboard/Team/Archive)
+5. Ignore Stitch nav chrome (Dashboard/Team/Archive)  
+6. No playbook = **onboarding**, not a broken product — guide Sarah to set one up  
+7. AI may propose playbook rules; only **Activate** makes them governance  
+8. Never present AI opinion as company policy without a human gate  
+
+### 9.3 Empty-playbook UX (Must)
+
+| Element | Copy / behaviour (intent) |
+|---|---|
+| Headline | We don’t have your playbook yet |
+| Support | We can’t reliably flag risk against *your* standards until rules are active |
+| Primary CTA | Upload firm playbook (PDF) |
+| Secondary CTA | Draft a starter from past contracts (3–5) |
+| Tertiary | Keep using shipped demo playbook (for reviewers / Loom) if golden file is present |
+| After propose | Editable rule list; clear “Proposed — not active yet” |
+| Activate | Explicit confirm; then reviews produce real flags |
 
 ---
 
@@ -254,9 +306,10 @@ Plus: Security Alert state (modal or page) for Journey C; simple History; option
 | **P1** | Security fence/sanitize + rewrite + Accept/Edit/Reject + decisions | Journey A |
 | **P2** | Real LLM compare-to-playbook (keep FAKE) | Live flags |
 | **P3** | Journey B (memory and/or overrides) + Journey C fixture | Multiplier + security demo |
-| **P4** | Playbook viewer, precedents seed, README polish, Loom | Zip |
+| **P4** | Playbook viewer + **Journey E empty-state / PDF import → Activate** (+ security halt on poisoned playbook) | Governance UX |
+| **P5** | Starter-from-past-contracts (E2) and/or thin-playbook suggestions; README + Loom | Zip polish |
 
-Do not build ReAct, Streamlit, or full vision security before P3.
+Do not build ReAct, Streamlit, or full vision security before P3. Prefer shipping E1 (PDF → Activate) before E2 if time-boxed.
 
 ---
 
@@ -267,10 +320,12 @@ Do not build ReAct, Streamlit, or full vision security before P3.
 - [ ] Decisions persisted + history  
 - [ ] Journey B demable (B1 or B2)  
 - [ ] Journey C demable  
-- [ ] Fence + sanitize in LLM path  
+- [ ] Journey E: empty-state when no playbook; no invented hard flags  
+- [ ] Playbook PDF propose → review → Activate (human gate); halted poison cannot Activate  
+- [ ] Fence + sanitize in LLM path (contracts + playbook imports)  
 - [ ] `FAKE_LLM=1` works  
 - [ ] README: approach, data, security, limitations, not legal advice  
-- [ ] Loom covering A + B + C  
+- [ ] Loom covering A + B + C (+ E onboarding if built)  
 
 ---
 
@@ -281,6 +336,8 @@ Do not build ReAct, Streamlit, or full vision security before P3.
 | Q1 | Django vs faster prototype shell? | Prefer Django per vision; don’t block P0 |
 | Q2 | Halt on injection vs fence-and-continue? | Halt on high-confidence heuristic; else fence |
 | Q3 | Hosted URL? | Not unless they confirm; zip + local |
+| Q4 | Demo with empty playbook or always ship golden JSON? | Ship golden for Loom Journey A; still show empty-state path in UI or Loom beat |
+| Q5 | E2 (past contracts) in MVP zip? | Should — cut to Could if time; E1 PDF path is higher priority |
 
 ---
 
@@ -290,6 +347,7 @@ Do not build ReAct, Streamlit, or full vision security before P3.
 |---|---|
 | This PRD | Scope contract |
 | `00-WHAT-WE-ARE-BUILDING.md` | Plain English |
+| `06-PRODUCT-MAP.md` | **Implemented** flows, statuses, decisions, DB (ops/agents) |
 | `02-MVP-IMPLEMENTATION.md` | How we build it (modules, files, phases) |
 | `designs/` | UI preview |
 | `gemini_brainstorm.md` | Raw brainstorm + adopted/deferred header |
@@ -303,7 +361,8 @@ Ship a prototype that shows PortSwigger:
 
 1. You understood the **legal queue** problem  
 2. AI is a **playbook compiler + memory**, not a chat toy  
-3. You take **hostile input and governance** seriously at demo depth  
-4. You can **cut scope** and still tell a complete story  
+3. When there’s no playbook, AI is a **setup co-pilot** (propose → lawyer activates) — never a silent policy engine  
+4. You take **hostile input and governance** seriously at demo depth  
+5. You can **cut scope** and still tell a complete story  
 
-*Upload → playbook check → flag/counter → decide → remember — safely enough to demo.*
+*Set up playbook (if needed) → upload → playbook check → flag/counter → decide → remember — safely enough to demo.*

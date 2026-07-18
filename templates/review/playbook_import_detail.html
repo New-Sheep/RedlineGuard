@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Review proposed rules — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Review proposed rules</h1>
+  <p>From <strong>{{ import_obj.filename }}</strong>. Edit in plain language, then activate. Not legal advice.</p>
+  <p class="meta">Status: {{ import_obj.get_status_display }}</p>
+  <p><a href="{% url 'review:playbook_import' %}">&larr; Import another</a></p>
+</section>
+
+{% if import_obj.status == "failed" %}
+  <div class="alert error"><pre>{{ import_obj.error_message }}</pre></div>
+{% else %}
+<form method="post" class="activate-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+
+  <div class="card-form">
+    <div class="field">
+      <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+      {{ form.name }}
+      {{ form.name.errors }}
+    </div>
+    <div class="field">
+      <label for="{{ form.preferred_governing_law.id_for_label }}">{{ form.preferred_governing_law.label }}</label>
+      {{ form.preferred_governing_law }}
+      {{ form.preferred_governing_law.errors }}
+    </div>
+  </div>
+
+  {% for row in rule_rows %}
+    <fieldset class="card-form rule-card">
+      <legend>Rule {{ forloop.counter }}</legend>
+      <div class="field"><label>Id</label>{{ row.id }}{{ row.id.errors }}</div>
+      <div class="field"><label>Clause type</label>{{ row.clause_type }}{{ row.clause_type.errors }}</div>
+      <div class="field"><label>Preferred position</label>{{ row.preferred }}{{ row.preferred.errors }}</div>
+      <div class="field"><label>Hard ceiling</label>{{ row.hard_ceiling }}{{ row.hard_ceiling.errors }}</div>
+      <div class="field"><label>Fallback draft (optional)</label>{{ row.fallback_text }}{{ row.fallback_text.errors }}</div>
+      <div class="field"><label>Severity</label>{{ row.severity }}{{ row.severity.errors }}</div>
+      <div class="field"><label>Detect phrases</label>{{ row.match_any }}{{ row.match_any.errors }}
+        <p class="help">{{ row.match_any.help_text }}</p>
+      </div>
+    </fieldset>
+  {% empty %}
+    <p>No rules were proposed. Try another PDF or edit after a re-import.</p>
+  {% endfor %}
+
+  <div class="card-form">
+    <div class="field">
+      <label>{{ form.confirm }} {{ form.confirm.label }}</label>
+      {{ form.confirm.errors }}
+    </div>
+    <button type="submit" class="btn">Activate playbook</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

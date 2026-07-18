@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Rewrite — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Rewrite</h1>
+  <p class="meta">
+    {{ finding.clause_name }} · rule <code>{{ finding.playbook_rule_id }}</code>
+    · <span class="risk-badge {{ finding.severity }}">{{ finding.severity|title }}</span>
+  </p>
+</section>
+
+<div class="rewrite-grid rise-in">
+  <section class="rewrite-card">
+    <h2>Why</h2>
+    <p class="rule">Cites playbook rule <code>{{ finding.playbook_rule_id }}</code></p>
+    <p>{{ finding.deviation_reason }}</p>
+    <p class="meta">Status: {{ finding.status }}</p>
+  </section>
+
+  <section class="rewrite-card">
+    <h2>Original / matched</h2>
+    <p class="meta">Language that triggered the rule</p>
+    {% if finding.clause_excerpt %}
+      <pre class="doc-text compact">{{ finding.clause_excerpt }}</pre>
+    {% else %}
+      <pre class="doc-text compact">{{ finding.clause_name }} — see document on Review.</pre>
+    {% endif %}
+  </section>
+
+  <section class="rewrite-card suggested">
+    <h2>Suggested</h2>
+    {% if draft and draft.draft_text %}
+      <p class="meta">Source: {{ draft.get_draft_source_display }}</p>
+      {% if draft.draft_source == "memory_precedent" and draft.provenance %}
+        <aside class="provenance">
+          <p>
+            Reused {{ draft.provenance.decision|default:"Accept" }} from
+            <strong>{{ draft.provenance.filename|default:"prior contract" }}</strong>
+            ({% firstof draft.provenance.date "n/a" }})
+            {% if draft.provenance.similarity != None %}
+              · similarity {{ draft.provenance.similarity }}
+            {% elif draft.provenance.distance != None %}
+              · distance {{ draft.provenance.distance }}
+            {% endif %}
+          </p>
+          {% if draft.provenance.clause_quote %}
+            <blockquote class="clause-quote">{{ draft.provenance.clause_quote }}</blockquote>
+          {% endif %}
+        </aside>
+      {% endif %}
+      <pre class="doc-text">{{ draft.draft_text }}</pre>
+      <p class="meta">{{ draft.rationale }}</p>
+    {% elif finding.suggested_counter %}
+      <p class="meta">Playbook fallback</p>
+      <pre class="doc-text">{{ finding.suggested_counter }}</pre>
+    {% else %}
+      <p class="meta">Needs human — no fallback draft in the playbook and no memory precedent.</p>
+    {% endif %}
+  </section>
+</div>
+
+<form method="post" class="card-form rise-in" id="decision-form">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="field">
+    <label>{{ form.action.label }}</label>
+    <p class="help">{{ form.action.help_text }}</p>
+    <div class="decision-tiles" role="group" aria-label="Decision">
+      <button type="button" class="decision-tile accept" data-value="accept">
+        <span class="tile-title">Accept</span>
+        <span class="tile-hint">Learn this counter</span>
+      </button>
+      <button type="button" class="decision-tile edit" data-value="edit">
+        <span class="tile-title">Edit</span>
+        <span class="tile-hint">Save your wording</span>
+      </button>
+      <button type="button" class="decision-tile reject" data-value="reject">
+        <span class="tile-title">Reject</span>
+        <span class="tile-hint">Avoid next time</span>
+      </button>
+      <button type="button" class="decision-tile override" data-value="override">
+        <span class="tile-title">Override</span>
+        <span class="tile-hint">Accept as-is</span>
+      </button>
+    </div>
+    <div class="decision-radios" hidden>
+      {{ form.action }}
+    </div>
+    {% if form.action.errors %}<div class="form-errors">{{ form.action.errors }}</div>{% endif %}
+  </div>
+  <div class="field">
+    <label for="{{ form.final_text.id_for_label }}">{{ form.final_text.label }}</label>
+    {{ form.final_text }}
+  </div>
+  <div class="field">
+    <label for="{{ form.reasoning.id_for_label }}">{{ form.reasoning.label }}</label>
+    {{ form.reasoning }}
+  </div>
+  <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+    <button type="submit" class="btn">Save decision</button>
+    <a class="btn btn-ghost" href="{% url 'contracts:review' pk=contract.pk %}">Back to review</a>
+  </div>
+</form>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById("decision-form");
+  if (!form) return;
+  var tiles = form.querySelectorAll(".decision-tile");
+  var radios = form.querySelectorAll('input[name="action"]');
+
+  function select(value) {
+    tiles.forEach(function (t) {
+      t.classList.toggle("selected", t.getAttribute("data-value") === value);
+    });
+    radios.forEach(function (r) {
+      r.checked = r.value === value;
+    });
+  }
+
+  tiles.forEach(function (t) {
+    t.addEventListener("click", function () {
+      select(t.getAttribute("data-value"));
+    });
+  });
+
+  var checked = form.querySelector('input[name="action"]:checked');
+  select(checked ? checked.value : "accept");
+})();
+</script>
+{% endblock %}

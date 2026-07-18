@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}RedlineGuard{% endblock %}</title>
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("redlineguard-theme");
+        if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="topbar-brand" href="{% url 'contracts:upload' %}">
+      <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+        <path
+          d="M5 20 L5 6 L14 6 C18 6 20 8 20 11 C20 14 18 16 14 16 L9 16 M16 16 L21 21"
+          stroke="var(--primary)"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-dasharray="80"
+          stroke-dashoffset="80"
+          style="animation: draw-stroke 900ms ease-out forwards"
+        />
+      </svg>
+      <span class="brand-name">RedlineGuard</span>
+    </a>
+    <div class="topbar-right">
+      <nav class="nav" aria-label="Primary">
+        <a href="{% url 'contracts:upload' %}">Contracts</a>
+        <a href="{% url 'decisions:history' %}">History</a>
+        <a href="{% url 'learning:memory' %}">Memory</a>
+        <span class="nav-group" aria-label="Setup">
+          <a href="{% url 'review:playbook_active' %}">Playbook</a>
+          <a href="{% url 'review:playbook_import' %}">Import</a>
+        </span>
+      </nav>
+      <span class="disclaimer-chip" title="First-pass assistant only">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        Not legal advice
+      </span>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle color theme">◐</button>
+    </div>
+  </header>
+  <main class="container{% block container_class %}{% endblock %}">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <p>Not legal advice. First-pass assistant only — a human remains accountable.</p>
+  </footer>
+  <script src="/static/js/theme.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

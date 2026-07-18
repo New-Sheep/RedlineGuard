@@ -1,0 +1,9 @@
+SHORT ORDER FORM — DEMO (fewer flags)
+
+Parties agree this short form is for RedlineGuard Journey A smoke tests.
+
+Governing law: This Agreement shall be governed by the laws of California.
+
+Indemnity: Supplier shall indemnify Customer for losses arising from Supplier's negligence (mutual preferred; this is one-sided for demo flagging).
+
+END

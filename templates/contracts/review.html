@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Review — RedlineGuard{% endblock %}
+{% block content %}
+{{ highlight_data|json_script:"rg-highlight-data" }}
+{{ preview|json_script:"rg-doc-text" }}
+<section class="cockpit-header rise-in">
+  {% if run %}
+  <div class="risk-gauge-wrap" aria-hidden="true">
+    <svg viewBox="0 0 120 120">
+      <circle cx="60" cy="60" r="46" fill="none" stroke="var(--border)" stroke-width="9" />
+      <circle
+        cx="60" cy="60" r="46" fill="none"
+        stroke="var(--risk-{{ risk_level }})"
+        stroke-width="9"
+        stroke-linecap="round"
+        stroke-dasharray="289"
+        stroke-dashoffset="{{ gauge_offset }}"
+      />
+    </svg>
+    <div class="risk-gauge-label">
+      <span class="score tabular">{{ run.risk_score }}</span>
+      <span class="of">of 100</span>
+    </div>
+  </div>
+  {% endif %}
+  <div class="cockpit-meta">
+    <h1>Review</h1>
+    <p class="meta">
+      {{ contract.filename }}
+      {% if run %} · {{ run.playbook_name }}{% endif %}
+      {% if contract.triage_kind %} · {{ contract.triage_kind }} / {{ contract.triage_stakes }}{% endif %}
+    </p>
+    {% if run %}
+      <p style="margin:0.4rem 0 0">
+        <span class="risk-badge {{ risk_level }}">{{ risk_level|title }} risk</span>
+        <span class="meta"> · {{ findings|length }} flag{{ findings|length|pluralize }}</span>
+      </p>
+    {% endif %}
+  </div>
+</section>
+
+{% if playbook_empty %}
+  <div class="alert warn rise-in">
+    <strong>We don’t have your playbook yet</strong>
+    <p>We can’t reliably flag risk against your standards until rules are active.</p>
+    <p>
+      <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_active' %}">See playbook status</a>
+    </p>
+  </div>
+{% endif %}
+
+<div class="review-layout rise-in">
+  <section class="doc-pane">
+    <div class="doc-pane-head">
+      <h2>Document</h2>
+      <span class="meta">Highlighted spans match playbook hits</span>
+    </div>
+    <div
+      id="doc-highlight-root"
+      class="doc-text scroll-thin"
+      data-truncated="{% if truncated %}1{% else %}0{% endif %}"
+    >{{ preview }}{% if truncated %}
+
+… (truncated){% endif %}</div>
+  </section>
+
+  <section class="flags-pane">
+    <div class="flags-pane-head">
+      <h2>Flags</h2>
+      <span class="meta">Click to jump in document</span>
+    </div>
+    {% if findings %}
+      <ul class="finding-list scroll-thin">
+        {% for f in findings %}
+          <li class="finding severity-{{ f.severity }}" data-finding-id="{{ f.pk }}">
+            <div class="finding-head">
+              <strong>{{ f.clause_name }}</strong>
+              <span class="risk-badge {{ f.severity }}">{{ f.severity|title }}</span>
+              <span class="badge">{{ f.status }}</span>
+            </div>
+            <p class="rule">Playbook rule: <code>{{ f.playbook_rule_id }}</code></p>
+            <p>{{ f.deviation_reason }}</p>
+            {% if f.clause_excerpt %}
+              <p class="meta" style="margin-top:0.35rem">“{{ f.clause_excerpt|truncatechars:120 }}”</p>
+            {% endif %}
+            {% if f.draft %}
+              <p class="meta">Draft: {{ f.draft.get_draft_source_display }}</p>
+            {% endif %}
+            {% with last=f.decisions.first %}
+              {% if last %}
+                <p class="ok">Decision recorded: {{ last.get_action_display }}</p>
+              {% else %}
+                <p style="margin-top:0.5rem">
+                  <a class="btn btn-sm" href="{% url 'review:rewrite' contract_id=contract.pk finding_id=f.pk %}">Review rewrite</a>
+                </p>
+              {% endif %}
+            {% endwith %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="meta" style="padding:1rem">
+        {% if playbook_empty %}
+          No flags — set up a playbook to start checking against your standards.
+        {% else %}
+          No playbook rules matched this document.
+        {% endif %}
+      </p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/highlight.js"></script>
+{% endblock %}

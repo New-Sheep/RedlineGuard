@@ -21,8 +21,14 @@ build/
 # Scratch / local runtime
 scratch/out/
 data/vector_memory/
+data/exports/
 *.sqlite3
 db.sqlite3
+media/
+data/playbook_config.json.bak
+# Runtime overrides accumulate locally; empty starter is committed
+# data/playbook_overrides.json is tracked; do not commit huge Chroma dirs
+
 
 # OS / IDE
 .DS_Store

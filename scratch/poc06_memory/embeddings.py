@@ -53,8 +53,8 @@ class SentenceEmbedder:
 
 
 def get_embedder() -> Embedder:
-    """FAKE_EMBED=1 (default) -> HashEmbedder; 0 -> SentenceEmbedder."""
-    fake = os.environ.get("FAKE_EMBED", "1").strip() not in ("0", "false", "False")
+    """FAKE_EMBED=0 (default) -> SentenceEmbedder (MiniLM); 1 -> HashEmbedder."""
+    fake = os.environ.get("FAKE_EMBED", "0").strip() not in ("0", "false", "False")
     if fake:
         return HashEmbedder()
     return SentenceEmbedder()

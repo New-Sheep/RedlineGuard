@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}History — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Decision history</h1>
+  <p class="meta">Accept / Edit / Reject / Override recorded from reviews.</p>
+</section>
+{% if decisions %}
+  <table class="history-table rise-in">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Contract</th>
+        <th>Rule</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in decisions %}
+        <tr>
+          <td>{{ d.created_at|date:"Y-m-d H:i" }}</td>
+          <td><a href="{% url 'contracts:review' pk=d.contract_id %}">{{ d.contract.filename }}</a></td>
+          <td><code>{{ d.finding.playbook_rule_id }}</code></td>
+          <td><span class="badge action-{{ d.action }}">{{ d.get_action_display }}</span></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="meta">No decisions yet. Complete a review rewrite to start the memory loop.</p>
+{% endif %}
+{% endblock %}

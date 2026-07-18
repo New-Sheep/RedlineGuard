@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import playbook — RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Import a playbook PDF</h1>
+  <p>Proposed from your PDF — review before activating. You never need to write JSON.</p>
+  <p><a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a></p>
+</section>
+
+<form method="post" enctype="multipart/form-data" class="card-form rise-in" style="max-width:28rem">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="field">
+    <label for="{{ form.sample_key.id_for_label }}">{{ form.sample_key.label }}</label>
+    {{ form.sample_key }}
+  </div>
+  <p class="or">or</p>
+  <div class="field">
+    <label for="{{ form.upload.id_for_label }}">{{ form.upload.label }}</label>
+    {{ form.upload }}
+  </div>
+  <button type="submit" class="btn">Propose rules</button>
+  <p class="help">Large PDFs open a progress screen (reading → security → proposing). Nothing goes live until you Activate.</p>
+</form>
+{% endblock %}

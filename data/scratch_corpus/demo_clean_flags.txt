@@ -1,0 +1,20 @@
+MUTUAL NON-DISCLOSURE AND COMMERCIAL TERMS (DEMO)
+
+This sample is curated for RedlineGuard demos. It is not a real counterparty paper.
+
+1. Governing Law
+This Agreement shall be governed by the laws of the State of California, without regard to conflict of law principles.
+
+2. Indemnification
+Licensee shall indemnify and hold harmless the Licensor from and against any and all claims, damages, and expenses arising out of this Agreement, without limitation as to amount.
+
+3. Equity / Control
+Licensor shall retain majority ownership and maintain control of Licensee. For clarity, Licensor may hold 50.1% of the voting equity.
+
+4. Accelerator Terms
+In connection with this license, Licensee grants seed stage equity of approximately 9% seed to the accelerator program, including a permanent anti-dilution floor.
+
+5. Exit Fee
+Upon a change of control of Licensee, Licensee shall pay Licensor a 1% change of control fee calculated on transaction value.
+
+END OF DEMO SAMPLE

@@ -28,6 +28,9 @@ def _as_hit_dicts(
                     "decision": p.record.decision,
                     "final_text": p.record.final_text,
                     "distance": p.distance,
+                    "filename": p.record.filename,
+                    "created_at": p.record.created_at,
+                    "clause_text": p.record.clause_text,
                 }
             )
         else:
@@ -39,6 +42,7 @@ class FakeDraftEngine:
     """Deterministic draft: memory accept/edit first, else playbook fallback.
 
     No LLM call. A future LlmDraftEngine can implement DraftEngine the same way.
+    Caller is expected to pre-filter by distance / reject-avoid.
     """
 
     def draft(
@@ -65,6 +69,8 @@ class FakeDraftEngine:
 
         if usable:
             best = usable[0]
+            dist = best.get("distance")
+            sim = None if dist is None else round(max(0.0, 1.0 - float(dist)), 3)
             return DraftResult(
                 playbook_rule_id=rule_id,
                 finding_status=status,
@@ -75,6 +81,15 @@ class FakeDraftEngine:
                     f"FAKE_LLM: reused nearest {best.get('decision')} precedent "
                     f"(dist={best.get('distance')})"
                 ),
+                provenance={
+                    "precedent_id": best.get("id") or "",
+                    "filename": best.get("filename") or "",
+                    "decision": best.get("decision") or "",
+                    "date": str(best.get("created_at") or "")[:10],
+                    "distance": dist,
+                    "similarity": sim,
+                    "clause_quote": (best.get("clause_text") or "")[:280],
+                },
             )
 
         fallback = finding.get("suggested_counter_proposal")
@@ -86,6 +101,7 @@ class FakeDraftEngine:
                 draft_source="playbook_fallback",
                 precedent_ids=[],
                 rationale="FAKE_LLM: no usable memory; using playbook fallback text",
+                provenance={},
             )
 
         return DraftResult(
@@ -95,4 +111,5 @@ class FakeDraftEngine:
             draft_source="none",
             precedent_ids=[],
             rationale="FAKE_LLM: no precedent accept/edit and no playbook fallback",
+            provenance={},
         )
