@@ -78,7 +78,7 @@ class FakeDraftEngine:
                 draft_source="memory_precedent",
                 precedent_ids=[str(h.get("id") or "") for h in usable if h.get("id")],
                 rationale=(
-                    f"FAKE_LLM: reused nearest {best.get('decision')} precedent "
+                    f"Reused nearest {best.get('decision')} precedent "
                     f"(dist={best.get('distance')})"
                 ),
                 provenance={
@@ -100,7 +100,7 @@ class FakeDraftEngine:
                 draft_text=str(fallback).strip(),
                 draft_source="playbook_fallback",
                 precedent_ids=[],
-                rationale="FAKE_LLM: no usable memory; using playbook fallback text",
+                rationale="No usable Accept/Edit memory; using playbook fallback text",
                 provenance={},
             )
 
@@ -110,6 +110,6 @@ class FakeDraftEngine:
             draft_text=None,
             draft_source="none",
             precedent_ids=[],
-            rationale="FAKE_LLM: no precedent accept/edit and no playbook fallback",
+            rationale="No precedent Accept/Edit and no playbook fallback",
             provenance={},
         )

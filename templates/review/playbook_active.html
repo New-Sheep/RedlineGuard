@@ -1,17 +1,59 @@
 {% extends "base.html" %}
-{% block title %}Active playbook — RedlineGuard{% endblock %}
+{% block title %}Active playbook - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
   <h1>Active playbook</h1>
-  <p>These are the rules the app uses today. Upload a PDF to propose updates — you review before anything goes live.</p>
-  <p><a class="btn" href="{% url 'review:playbook_import' %}">Import playbook PDF</a></p>
+  {% if is_active_company_playbook %}
+    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">Active company playbook</p>
+    <p class="meta"><a href="{% url 'review:gap_suggest' %}">Suggest rules from your decisions</a></p>
+    <p>These are the rules used on every review. Import or draft updates, then Activate - nothing goes live silently.</p>
+  {% else %}
+    <p class="badge muted" style="display:inline-block;margin-bottom:0.5rem">No active company playbook</p>
+    <p>We can’t reliably flag risk against your standards until rules are active.</p>
+  {% endif %}
+  <p>
+    <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
+    <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Draft starter from past contracts</a>
+  </p>
 </section>
 
+{% if is_active_company_playbook %}
 <div class="card-form rise-in">
   <p><strong>{{ playbook.name }}</strong></p>
   <p class="meta">Preferred governing law: {{ playbook.preferred_governing_law }}</p>
   <p class="meta">Rules: {{ playbook.rules|length }}</p>
+  {% if audit %}
+    <p class="meta">Auditor: {% if audit.ok %}<span class="ok">OK</span>{% else %}<span class="badge">errors</span>{% endif %}
+      · {{ audit.warnings|length }} warning{{ audit.warnings|length|pluralize }}
+    </p>
+    {% if audit.errors %}
+      <ul class="meta">{% for e in audit.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if audit.warnings %}
+      <ul class="meta">{% for w in audit.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+    {% endif %}
+  {% endif %}
 </div>
+
+{% if versions %}
+  <aside class="coverage-gaps rise-in">
+    <h2 class="meta" style="margin:0 0 0.35rem">Playbook versions (restore)</h2>
+    <p class="meta">Activate snapshots previous golden files. Restore never happens silently.</p>
+    <ul class="meta" style="list-style:none;padding:0;margin:0.5rem 0 0">
+      {% for v in versions %}
+        <li style="margin:0.35rem 0;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+          <code>{{ v.name }}</code>
+          <form method="post" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="version" value="{{ v.name }}">
+            <button type="submit" class="btn btn-sm btn-ghost">Restore</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  </aside>
+{% endif %}
+{% endif %}
 
 {% for rule in playbook.rules %}
   <article class="card-form rule-card rise-in">
@@ -24,16 +66,19 @@
     {% if rule.fallback_text %}
       <p><strong>Fallback draft:</strong> {{ rule.fallback_text }}</p>
     {% else %}
-      <p class="meta">No fallback — deviations need a human.</p>
+      <p class="meta">No fallback - deviations need a human.</p>
     {% endif %}
   </article>
 {% empty %}
   <div class="card-form rise-in">
     <p><strong>No active rules yet.</strong></p>
-    <p>The app will not invent company policy. Import a playbook PDF, or keep the demo
-       golden file. Vector memory only reuses <em>past Accept/Edit decisions</em> —
-       it does not replace a playbook.</p>
-    <p><a class="btn" href="{% url 'review:playbook_import' %}">Import playbook PDF</a></p>
+    <p>The app will not invent company policy. Import a playbook PDF, draft a starter from
+       past contracts, or keep the demo golden file. Vector memory only reuses
+       <em>past Accept/Edit decisions</em> - it does not replace a playbook.</p>
+    <p>
+      <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Draft starter from past contracts</a>
+    </p>
   </div>
 {% endfor %}
 {% endblock %}

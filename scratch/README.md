@@ -3,6 +3,8 @@
 Independent proof-of-concepts. Each step **prints** and **saves** artifacts so you can
 watch a PDF transform: extract → security → triage → playbook → memory → **draft**.
 
+For the **Django app** reviewers run, use the root [`README.md`](../README.md) and [`docs/13-HANDOFF.md`](../docs/13-HANDOFF.md) instead — this folder is builder lab only.
+
 ## Setup
 
 ```bash

@@ -1,10 +1,32 @@
 {% extends "base.html" %}
-{% block title %}History — RedlineGuard{% endblock %}
+{% block title %}History - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
   <h1>Decision history</h1>
-  <p class="meta">Accept / Edit / Reject / Override recorded from reviews.</p>
+  <p class="meta">Your Accept / Edit / Reject choices. Undo if you clicked by mistake.</p>
 </section>
+
+<form method="get" class="filters rise-in" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 1rem;align-items:end">
+  <label class="meta">Action
+    <select name="action">
+      <option value="">All</option>
+      {% for val, label in action_choices %}
+        <option value="{{ val }}" {% if action_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="meta">Rule id
+    <input type="text" name="rule_id" value="{{ rule_id_filter }}" placeholder="governing_law…">
+  </label>
+  <label class="meta">Contract
+    <input type="text" name="contract" value="{{ contract_filter }}" placeholder="filename…">
+  </label>
+  <label class="meta">
+    <input type="checkbox" name="undone" value="1" {% if show_undone %}checked{% endif %}> Show undone
+  </label>
+  <button type="submit" class="btn btn-sm">Filter</button>
+</form>
+
 {% if decisions %}
   <table class="history-table rise-in">
     <thead>
@@ -13,19 +35,39 @@
         <th>Contract</th>
         <th>Rule</th>
         <th>Action</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       {% for d in decisions %}
-        <tr>
+        <tr {% if d.superseded %}class="muted"{% endif %}>
           <td>{{ d.created_at|date:"Y-m-d H:i" }}</td>
           <td><a href="{% url 'contracts:review' pk=d.contract_id %}">{{ d.contract.filename }}</a></td>
           <td><code>{{ d.finding.playbook_rule_id }}</code></td>
-          <td><span class="badge action-{{ d.action }}">{{ d.get_action_display }}</span></td>
+          <td>
+            <span class="badge action-{{ d.action }}">{{ d.get_action_display }}</span>
+            {% if d.superseded %}<span class="badge">undone</span>{% endif %}
+          </td>
+          <td>
+            {% if not d.superseded %}
+              <form method="post" action="{% url 'decisions:undo' pk=d.pk %}" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-ghost">Undo</button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'decisions:redo' pk=d.pk %}" style="display:inline">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button type="submit" class="btn btn-sm btn-ghost">Redo</button>
+              </form>
+            {% endif %}
+          </td>
         </tr>
       {% endfor %}
     </tbody>
   </table>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
 {% else %}
   <p class="meta">No decisions yet. Complete a review rewrite to start the memory loop.</p>
 {% endif %}

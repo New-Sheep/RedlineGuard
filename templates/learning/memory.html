@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Memory — RedlineGuard{% endblock %}
+{% block title %}Memory - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
-  <h1>Institutional memory</h1>
-  <p class="meta">Precedents reused on Rewrite. Accept/Edit seed counters; Rejects are labelled Avoid.</p>
+  <h1>Memory</h1>
+  <p class="meta">Past decisions we reuse when drafting the next similar rewrite.</p>
 </section>
 
 {% if precedents %}
@@ -32,12 +32,12 @@
             {% endif %}
           </td>
           <td class="clip">{{ p.clause_snippet }}</td>
-          <td class="clip">{% if p.final_text %}{{ p.final_text }}{% else %}—{% endif %}</td>
+          <td class="clip">{% if p.final_text %}{{ p.final_text }}{% else %}-{% endif %}</td>
           <td>
             {% if p.contract_id %}
               <a href="{% url 'contracts:review' pk=p.contract_id %}">{{ p.filename|default:"Open" }}</a>
             {% else %}
-              {{ p.filename|default:"—" }}
+              {{ p.filename|default:"-" }}
             {% endif %}
           </td>
           <td>
@@ -57,14 +57,20 @@
 
 <section class="card-form rise-in" style="margin-top:2rem">
   <h2>Active rule overrides</h2>
-  <p class="meta">From <code>playbook_overrides.json</code> — suppressed for compare; not written to the golden playbook.</p>
+  <p class="meta">From <code>playbook_overrides.json</code> - suppressed for compare; not written to the golden playbook.</p>
   {% if overrides %}
     <ul class="override-list">
       {% for o in overrides %}
         <li>
           <code>{{ o.playbook_rule_id }}</code>
-          — {{ o.reason|default:"accept as-is" }}
+          - {{ o.reason|default:"accept as-is" }}
           <span class="meta">({{ o.created_at|default:""|slice:":10" }})</span>
+          <form method="post" action="{% url 'learning:revoke_override' %}" class="inline-form" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="rule_id" value="{{ o.playbook_rule_id }}">
+            <input type="hidden" name="contract_id" value="{{ o.contract_id|default:'' }}">
+            <button type="submit" class="btn-ghost">Revoke</button>
+          </form>
         </li>
       {% endfor %}
     </ul>
@@ -72,4 +78,12 @@
     <p class="meta">No active overrides.</p>
   {% endif %}
 </section>
+
+{% if suggest_gaps %}
+<section class="agent-assist-panel rise-in" style="margin-top:1.5rem">
+  <h2>Fill playbook gaps from Rejects</h2>
+  <p class="meta">You have enough Reject/Edit decisions to propose new rules - still Activate to go live.</p>
+  <p><a class="btn" href="{% url 'review:gap_suggest' %}">Suggest rules from decisions</a></p>
+</section>
+{% endif %}
 {% endblock %}

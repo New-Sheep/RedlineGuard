@@ -22,7 +22,7 @@ Scratch stays the behavioural oracle. Django adds: UI, ORM persistence, HTTP API
 
 **Modular monolith** — one Django process, one SQLite DB, local Chroma.
 
-Not microservices (wrong size for a zip take-home).
+Not microservices (wrong size for a GitHub/zip take-home — see [`13-HANDOFF.md`](13-HANDOFF.md)).
 
 ```
 HTTP (templates + thin JSON API)
@@ -213,7 +213,7 @@ From PRD Won’t list — do not sneak in:
 - Silent invented findings when playbook is empty  
 - ReAct / multi-agent draft graph  
 - SSO / full RBAC  
-- Hosted deploy theatre  
+- Hosted deploy theatre / Docker / `.exe` packaging (see [`13-HANDOFF.md`](13-HANDOFF.md))
 - Claiming unbuilt crypto/compliance badges  
 
 ---

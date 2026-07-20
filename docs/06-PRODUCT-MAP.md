@@ -4,8 +4,8 @@
 |---|---|
 | **Audience** | Builders, Loom/demo, future agents |
 | **Status** | Living reference — reflects the **implemented** Django app |
-| **Last updated** | 2026-07-18 |
-| **Related** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`01-PRD-MVP.md`](01-PRD-MVP.md) · [`05-DJANGO-BACKEND-PLAN.md`](05-DJANGO-BACKEND-PLAN.md) |
+| **Last updated** | 2026-07-19 |
+| **Related** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`01-PRD-MVP.md`](01-PRD-MVP.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`05-DJANGO-BACKEND-PLAN.md`](05-DJANGO-BACKEND-PLAN.md) |
 
 **This document is the mental model for the product going forward.** Prefer it over scattered chat when answering “what happens when…?”
 
@@ -63,8 +63,9 @@ flowchart TB
 | `/api/memory/` | JSON | List precedents (same data as Memory page) |
 | `/api/memory/search/?q=&rule_id=` | JSON | Same retrieval pipeline draft uses |
 | `/api/memory/<id>/` | JSON DELETE | Unlearn (also POST) |
-| `/playbook/` | Active rules | What’s checking contracts |
-| `/playbook/import/` → `/playbook/imports/<id>/` | Import / edit / Activate | Setup |
+| `/playbook/` | Active company playbook | What’s checking contracts |
+| `/playbook/import/` → `/playbook/imports/<id>/` | Import PDF / edit / Activate | Setup E1 |
+| `/playbook/starter/` | Starter from 3–5 past contracts | Setup E2 |
 
 Thin JSON memory endpoints exist for Loom/devtools; the product UI remains mostly server-rendered HTML.
 
@@ -97,8 +98,9 @@ Order in `apps.review.services.pipeline.run_pipeline`:
 2. **Security** — sanitize + injection detect → `SecurityEvent`; if halt → stop (`halted`)  
 3. **Triage** — rough kind/stakes (e.g. `nda`, `routine_queue`) — labels only  
 4. **Playbook compare** — load golden JSON, **remove overridden rules**, match patterns → findings  
-5. **Draft** — for each finding: search Chroma on **clause excerpt** (not playbook reason); apply `MEMORY_MAX_DISTANCE`; skip Accept reuse if a near **Reject** exists; else playbook fallback / LLM  
-6. Persist **`ReviewRun` + Findings + Drafts** (Draft may store `provenance` for memory hits) → status `ready`
+5. **Compare** — L0 regex + L1 local semantic retrieve (`SEMANTIC_COMPARE`); every flag cites `playbook_rule_id`; score `BASE=0` with breakdown on Review  
+6. **Draft** — for each finding: search Chroma on **clause excerpt** (not playbook reason); apply `MEMORY_MAX_DISTANCE`; skip Accept reuse if a near **Reject** exists; else playbook fallback / LLM  
+7. Persist **`ReviewRun` + Findings + Drafts** (Finding may store `sources` / `confidence`; ReviewRun stores `score_breakdown`) → status `ready`
 
 Empty playbook → still `ready`, but **0 findings** + “set up playbook” banner.
 
@@ -213,7 +215,7 @@ Relationship in practice:
 |---------|--------|
 | Upload / sample analyze | Yes (async + progress) |
 | Security halt | Yes |
-| Playbook-cited flags | Yes (heuristic match) |
+| Playbook-cited flags | Yes (L0 regex + L1 local semantic; no LLM judge yet) |
 | Fake draft + memory draft + LLM suggested | Yes (`FAKE_LLM=1` default) |
 | Accept / Edit / Reject / Override | Yes |
 | History | Yes |
@@ -222,13 +224,18 @@ Relationship in practice:
 | Reject as Avoid (blocks reuse) | Yes |
 | PactPilot-style UI (SSR tokens, cockpit, highlights) | Yes |
 | Playbook PDF import → Activate | Yes |
-| Empty-playbook onboarding CTA | Yes |
+| Starter from 3–5 past contracts (E2) | Yes (`/playbook/starter/`) |
+| Seed precedents (`seed_precedents`) | Yes |
+| Proposed vs active playbook labels | Yes |
+| Empty-playbook onboarding CTA | Yes (PDF + starter) |
 | Curated demo samples | Yes |
 | MiniLM warmup at startup | Yes (when `FAKE_EMBED=0`) |
-| Real LLM compare | No (patterns only) |
+| Real LLM compare | No (patterns + local semantic; L2 planned) |
 | JSON REST API | Thin: status + memory |
-| E2 starter from past NDAs | No |
 | SSO / multi-user | No |
+
+**Shipped vs PRD scorecard + secure LLM roadmap:** [`07-MVP-AUDIT-CHECKPOINT.md`](07-MVP-AUDIT-CHECKPOINT.md).  
+**How flags/scores work (L0+L1 shipped; L2 planned):** [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md).
 
 ---
 

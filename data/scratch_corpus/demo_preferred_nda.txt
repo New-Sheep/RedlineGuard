@@ -1,0 +1,13 @@
+Mutual non-disclosure agreement (sample preferred paper).
+
+1. Confidentiality. Each party shall protect Confidential Information for three (3) years
+after termination, except Trade Secrets which remain protected while they qualify as such.
+Perpetual confidentiality outside trade secrets is not accepted.
+
+2. Governing law. This Agreement shall be governed by the laws of England and Wales.
+
+3. Intellectual property. Each party retains all right, title and interest in its
+pre-existing Intellectual Property. No assignment of background IP is granted.
+
+4. Liability. Aggregate liability is capped at fees paid in the preceding twelve months.
+Unlimited liability is not accepted.

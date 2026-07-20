@@ -21,6 +21,17 @@ from scratch._io import (  # noqa: E402
     write_text,
 )
 
+# Below this after probing early pages → treat as image-only / empty.
+_MIN_USEFUL_CHARS = 40
+# Stop walking image-heavy PDFs after this many empty pages (+ one peek).
+_EARLY_EMPTY_PAGES = 2
+
+IMAGE_ONLY_HINT = (
+    "No selectable text found. E-signed or scanned PDFs are often image-only — "
+    "RedlineGuard needs a text layer. Use a Sample contract on the upload page, "
+    "or OCR/export the PDF to text first."
+)
+
 
 def assess_quality(text: str) -> str:
     """Return 'ok' or 'poor' based on printable / token heuristics."""
@@ -56,37 +67,109 @@ def assess_quality(text: str) -> str:
     return "ok"
 
 
+def _joined_len(parts: list[str]) -> int:
+    return len("\n".join(parts).strip())
+
+
+def _extract_pdf_pypdf(path: Path) -> tuple[str, int, bool]:
+    """Fast text-layer extract. Returns (text, page_count, image_only_suspected)."""
+    import pypdf
+
+    reader = pypdf.PdfReader(str(path))
+    page_count = len(reader.pages)
+    parts: list[str] = []
+    for i, page in enumerate(reader.pages):
+        parts.append(page.extract_text() or "")
+        if i + 1 >= _EARLY_EMPTY_PAGES and _joined_len(parts) < _MIN_USEFUL_CHARS:
+            # One more peek before giving up (cover-page edge case)
+            if i + 1 < page_count:
+                parts.append(reader.pages[i + 1].extract_text() or "")
+            if _joined_len(parts) < _MIN_USEFUL_CHARS:
+                return "", page_count, True
+    text = "\n".join(parts)
+    if _joined_len(parts) < _MIN_USEFUL_CHARS:
+        return text, page_count, True
+    return text, page_count, False
+
+
+def _extract_pdf_pdfplumber(path: Path) -> tuple[str, int, bool]:
+    """Fallback extract with early abort on char-less (image) pages."""
+    import pdfplumber
+
+    parts: list[str] = []
+    with pdfplumber.open(path) as pdf:
+        page_count = len(pdf.pages)
+        empty_streak = 0
+        for i, page in enumerate(pdf.pages):
+            # page.chars is cheaper than full layout extract when empty
+            n_chars = len(page.chars or [])
+            if n_chars == 0:
+                parts.append("")
+                empty_streak += 1
+                if (
+                    empty_streak >= _EARLY_EMPTY_PAGES
+                    and _joined_len(parts) < _MIN_USEFUL_CHARS
+                ):
+                    if i + 1 < page_count:
+                        nxt = pdf.pages[i + 1]
+                        if len(nxt.chars or []) == 0:
+                            return "", page_count, True
+                        parts.append(nxt.extract_text() or "")
+                        if _joined_len(parts) < _MIN_USEFUL_CHARS:
+                            return "", page_count, True
+                    else:
+                        return "", page_count, True
+                continue
+            empty_streak = 0
+            parts.append(page.extract_text() or "")
+    text = "\n".join(parts)
+    return text, page_count, _joined_len(parts) < _MIN_USEFUL_CHARS
+
+
 def extract_pdf(path: Path | str) -> dict:
-    """Extract text from PDF or plain .txt; assess quality."""
+    """Extract text from PDF or plain .txt; assess quality.
+
+    Image-only / e-sign PDFs abort after a few empty pages so analyze fails
+    in seconds instead of walking every page with pdfplumber (~45s+).
+    """
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
 
     suffix = path.suffix.lower()
+    image_only = False
     if suffix == ".txt":
         text = path.read_text(encoding="utf-8", errors="replace")
         page_count = 1
     elif suffix == ".pdf":
-        import pdfplumber
-
-        parts: list[str] = []
-        with pdfplumber.open(path) as pdf:
-            page_count = len(pdf.pages)
-            for page in pdf.pages:
-                parts.append(page.extract_text() or "")
-        text = "\n".join(parts)
+        text = ""
+        page_count = 0
+        try:
+            text, page_count, image_only = _extract_pdf_pypdf(path)
+        except Exception:
+            text, page_count, image_only = _extract_pdf_pdfplumber(path)
+        if not text.strip() and not image_only:
+            # pypdf returned empty without early flag — try plumber once
+            try:
+                text, page_count, image_only = _extract_pdf_pdfplumber(path)
+            except Exception:
+                pass
     else:
         raise ValueError(f"Unsupported file type: {suffix}")
 
     quality = assess_quality(text)
-    return {
+    out = {
         "source": str(path.resolve()),
         "filename": path.name,
         "page_count": page_count,
         "char_count": len(text),
         "quality": quality,
         "text": text,
+        "image_only_suspected": bool(image_only or (not text.strip() and suffix == ".pdf")),
     }
+    if out["image_only_suspected"]:
+        out["hint"] = IMAGE_ONLY_HINT
+    return out
 
 
 def preview_markdown(result: dict, max_lines: int = 80) -> str:
@@ -99,7 +182,9 @@ def preview_markdown(result: dict, max_lines: int = 80) -> str:
         f"- **Chars:** {result['char_count']}\n"
         f"- **Quality:** **{result['quality']}**\n\n"
     )
-    if result["quality"] == "poor":
+    if result.get("image_only_suspected"):
+        banner += f"> {IMAGE_ONLY_HINT}\n\n"
+    elif result["quality"] == "poor":
         banner += (
             "> Text quality looks poor (possible scan/OCR). "
             "Do not auto-approve or deep-review until human/OCR pass.\n\n"
@@ -141,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Pages:    {result['page_count']}")
     print(f"Chars:    {result['char_count']}")
     print(f"Quality:  {result['quality']}")
+    if result.get("image_only_suspected"):
+        print(f"Hint:     {IMAGE_ONLY_HINT}")
     print(f"Artifacts:{result['run_dir']}")
     print("\n--- preview (first 15 lines) ---")
     for line in result["text"].splitlines()[:15]:

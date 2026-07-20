@@ -3,12 +3,41 @@ from __future__ import annotations
 import uuid
 
 from django.db import models
+from django.db.models import Case, IntegerField, Value, When
+
+
+def _default_finding_sources() -> list:
+    return ["rule"]
+
+
+def _severity_rank_annotation():
+    """High → Medium → Low (alphabetical Meta.ordering was wrong: high < low < medium)."""
+    return Case(
+        When(severity__iexact="high", then=Value(0)),
+        When(severity__iexact="medium", then=Value(1)),
+        When(severity__iexact="low", then=Value(2)),
+        default=Value(3),
+        output_field=IntegerField(),
+    )
+
+
+class FindingQuerySet(models.QuerySet):
+    def by_severity(self):
+        return self.annotate(_sev_rank=_severity_rank_annotation()).order_by(
+            "_sev_rank", "playbook_rule_id"
+        )
+
+
+class FindingManager(models.Manager):
+    def get_queryset(self):
+        return FindingQuerySet(self.model, using=self._db).by_severity()
 
 
 class PlaybookImport(models.Model):
     class Source(models.TextChoices):
         UPLOAD = "upload", "Upload"
         SAMPLE = "sample", "Sample"
+        STARTER = "starter", "Starter from past contracts"
 
     class Status(models.TextChoices):
         UPLOADED = "uploaded", "Uploaded"
@@ -20,7 +49,7 @@ class PlaybookImport(models.Model):
 
     class ProgressStep(models.TextChoices):
         QUEUED = "queued", "Queued"
-        READING = "reading", "Reading playbook PDF"
+        READING = "reading", "Reading source"
         SECURITY = "security", "Security check"
         PROPOSING = "proposing", "Proposing rules"
         DONE = "done", "Done"
@@ -30,8 +59,17 @@ class PlaybookImport(models.Model):
     source = models.CharField(max_length=16, choices=Source.choices)
     file = models.FileField(upload_to="playbooks/%Y/%m/", blank=True, null=True)
     sample_key = models.CharField(max_length=512, blank=True, default="")
+    # E2: [{kind: sample|upload, key|rel, name, liked}]
+    starter_manifest = models.JSONField(default=list, blank=True)
     extracted_text = models.TextField(blank=True, default="")
     proposed_json = models.JSONField(default=dict, blank=True)
+    proposal_source = models.CharField(
+        max_length=32,
+        blank=True,
+        default="fake",
+        help_text="fake | nvidia | ollama | deepseek | moonshot | http",
+    )
+    proposal_model = models.CharField(max_length=128, blank=True, default="")
     status = models.CharField(
         max_length=16,
         choices=Status.choices,
@@ -70,8 +108,19 @@ class ReviewRun(models.Model):
         related_name="review_runs",
     )
     risk_score = models.PositiveIntegerField(default=0)
+    score_breakdown = models.JSONField(default=dict, blank=True)
     playbook_name = models.CharField(max_length=256, blank=True, default="")
     playbook_empty = models.BooleanField(default=False)
+    coverage_gaps = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Playbook rules with no match in this contract",
+    )
+    agent_assist = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="No-playbook scout or clean-pass brief from context agent",
+    )
     triage_kind = models.CharField(max_length=64, blank=True, default="")
     triage_stakes = models.CharField(max_length=64, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -104,10 +153,21 @@ class Finding(models.Model):
     clause_excerpt = models.TextField(blank=True, default="")
     start_offset = models.PositiveIntegerField(default=0)
     end_offset = models.PositiveIntegerField(default=0)
+    sources = models.JSONField(default=_default_finding_sources, blank=True)
+    confidence = models.FloatField(default=1.0)
+    match_distance = models.FloatField(null=True, blank=True)
+    plain_english = models.TextField(
+        blank=True,
+        default="",
+        help_text="One-line plain-English gloss of the risk",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = FindingManager()
+
     class Meta:
-        ordering = ["severity", "playbook_rule_id"]
+        # Ordering applied via FindingManager (severity rank, not alphabetical).
+        ordering = []
 
     def __str__(self) -> str:
         return f"{self.playbook_rule_id} ({self.status})"
@@ -135,7 +195,45 @@ class Draft(models.Model):
     precedent_ids = models.JSONField(default=list, blank=True)
     rationale = models.TextField(blank=True, default="")
     provenance = models.JSONField(default=dict, blank=True)
+    provider_label = models.CharField(max_length=32, blank=True, default="")
+    copilot_json = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="RewriteCopilot: {why, options[{tone,text}]}",
+    )
+    memory_explain = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return f"Draft {self.draft_source} for {self.finding_id}"
+
+
+class MissedClause(models.Model):
+    """Lawyer-flagged gap (F22) — propose rule → Activate."""
+
+    class Status(models.TextChoices):
+        PROPOSED = "proposed", "Proposed"
+        ACTIVATED = "activated", "Activated"
+        DISMISSED = "dismissed", "Dismissed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    contract = models.ForeignKey(
+        "contracts.Contract",
+        on_delete=models.CASCADE,
+        related_name="missed_clauses",
+    )
+    excerpt = models.TextField()
+    note = models.TextField(blank=True, default="")
+    proposed_rule = models.JSONField(default=dict, blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PROPOSED,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"MissedClause {self.status} ({self.pk})"

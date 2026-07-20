@@ -1,8 +1,9 @@
 {% extends "base.html" %}
-{% block title %}Review — RedlineGuard{% endblock %}
+{% block title %}Review - RedlineGuard{% endblock %}
 {% block content %}
 {{ highlight_data|json_script:"rg-highlight-data" }}
 {{ preview|json_script:"rg-doc-text" }}
+
 <section class="cockpit-header rise-in">
   {% if run %}
   <div class="risk-gauge-wrap" aria-hidden="true">
@@ -19,43 +20,106 @@
     </svg>
     <div class="risk-gauge-label">
       <span class="score tabular">{{ run.risk_score }}</span>
-      <span class="of">of 100</span>
+      <span class="of">{{ verdict.score_label|default:"Risk score" }}</span>
     </div>
   </div>
   {% endif %}
   <div class="cockpit-meta">
-    <h1>Review</h1>
-    <p class="meta">
-      {{ contract.filename }}
-      {% if run %} · {{ run.playbook_name }}{% endif %}
-      {% if contract.triage_kind %} · {{ contract.triage_kind }} / {{ contract.triage_stakes }}{% endif %}
-    </p>
+    <h1>{% if verdict %}{{ verdict.title }}{% else %}Review{% endif %}</h1>
+    <p class="meta">{{ contract.filename }}{% if run %} · {{ run.playbook_name }}{% endif %}</p>
     {% if run %}
       <p style="margin:0.4rem 0 0">
-        <span class="risk-badge {{ risk_level }}">{{ risk_level|title }} risk</span>
-        <span class="meta"> · {{ findings|length }} flag{{ findings|length|pluralize }}</span>
+        {% if clean_pass %}
+          <span class="risk-badge low">No issues found</span>
+        {% else %}
+          <span class="risk-badge {{ risk_level }}">{{ risk_level|title }} risk</span>
+        {% endif %}
+        <span class="meta"> · {{ findings|length }} to review</span>
+        <button type="button" class="btn btn-sm btn-ghost" id="copy-brief-btn" style="margin-left:0.5rem">Copy brief</button>
       </p>
+      {% if verdict %}
+        <p class="verdict-blurb" style="margin:0.45rem 0 0;max-width:34rem">{{ verdict.blurb }}</p>
+      {% endif %}
+      {% if not clean_pass and score_breakdown %}
+      <p class="meta score-breakdown" style="margin:0.35rem 0 0">
+        {% if score_breakdown.rule_points %}
+          Direct rule matches: {{ score_breakdown.rule_points }}
+        {% endif %}
+        {% if score_breakdown.semantic_points %}
+          {% if score_breakdown.rule_points %} · {% endif %}
+          Similar wording: {{ score_breakdown.semantic_points|floatformat:0 }}
+        {% endif %}
+        {% if score_breakdown.llm_confirmed or score_breakdown.llm_dropped %}
+          · AI double-check kept {{ score_breakdown.llm_confirmed|default:0 }},
+          dropped {{ score_breakdown.llm_dropped|default:0 }}
+        {% endif %}
+      </p>
+      {% endif %}
     {% endif %}
   </div>
 </section>
 
 {% if playbook_empty %}
   <div class="alert warn rise-in">
-    <strong>We don’t have your playbook yet</strong>
-    <p>We can’t reliably flag risk against your standards until rules are active.</p>
+    <strong>Add your company playbook first</strong>
+    <p>We can’t flag risk against your standards until rules are active.</p>
     <p>
-      <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
-      <a class="btn btn-ghost" href="{% url 'review:playbook_active' %}">See playbook status</a>
+      <a class="btn" href="{% url 'review:playbook_import' %}">Import playbook</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Build from past contracts</a>
     </p>
   </div>
+{% endif %}
+
+{% if clean_pass %}
+  <section class="clean-pass-panel rise-in">
+    <h2>What should you do?</h2>
+    <ol class="next-steps">
+      <li><strong>Copy brief</strong> if you need a short note for the requester.</li>
+      <li><strong>Skim the document</strong> on the left - AI can miss edge cases.</li>
+      <li><strong>Upload another</strong> contract, or open Playbook if you expected issues here.</li>
+    </ol>
+    <p style="margin:0.75rem 0 0;display:flex;flex-wrap:wrap;gap:0.5rem">
+      <a class="btn" href="{% url 'contracts:upload' %}">Upload another</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_active' %}">View playbook</a>
+    </p>
+  </section>
+{% endif %}
+
+{% if agent_assist.headline and agent_assist.plain_english and not clean_pass %}
+  <aside class="agent-assist-panel rise-in">
+    <h2>{{ agent_assist.headline }}</h2>
+    <p>{{ agent_assist.plain_english }}</p>
+    {% if agent_assist.next_steps %}
+      <ol class="next-steps" style="margin:0.5rem 0 0">
+        {% for s in agent_assist.next_steps|slice:":3" %}
+          <li>{{ s }}</li>
+        {% endfor %}
+      </ol>
+    {% endif %}
+  </aside>
 {% endif %}
 
 <div class="review-layout rise-in">
   <section class="doc-pane">
     <div class="doc-pane-head">
       <h2>Document</h2>
-      <span class="meta">Highlighted spans match playbook hits</span>
+      <span class="meta">{% if is_pdf %}PDF preview · {% endif %}Yellow highlights mark flagged text</span>
     </div>
+    {% if is_pdf and pdf_url %}
+      <div id="pdf-pane" class="pdf-embed scroll-thin" style="height:420px;margin-bottom:0.5rem;border:1px solid var(--border);border-radius:0.5rem;overflow:hidden;background:var(--muted)">
+        <object
+          data="{{ pdf_url }}#view=FitH"
+          type="application/pdf"
+          title="Contract PDF"
+          style="width:100%;height:100%;border:0;display:block"
+        >
+          <iframe title="Contract PDF" src="{{ pdf_url }}#view=FitH" style="width:100%;height:100%;border:0"></iframe>
+        </object>
+      </div>
+      <p class="meta" style="margin:0 0 0.35rem">
+        <a href="{{ pdf_url }}" target="_blank" rel="noopener">Open PDF in new tab</a>
+      </p>
+    {% endif %}
     <div
       id="doc-highlight-root"
       class="doc-text scroll-thin"
@@ -67,8 +131,8 @@
 
   <section class="flags-pane">
     <div class="flags-pane-head">
-      <h2>Flags</h2>
-      <span class="meta">Click to jump in document</span>
+      <h2>{% if clean_pass %}Issues{% else %}Issues to decide{% endif %}</h2>
+      <span class="meta">{% if findings %}Click one to jump in the document{% else %}Nothing flagged{% endif %}</span>
     </div>
     {% if findings %}
       <ul class="finding-list scroll-thin">
@@ -77,22 +141,37 @@
             <div class="finding-head">
               <strong>{{ f.clause_name }}</strong>
               <span class="risk-badge {{ f.severity }}">{{ f.severity|title }}</span>
-              <span class="badge">{{ f.status }}</span>
             </div>
-            <p class="rule">Playbook rule: <code>{{ f.playbook_rule_id }}</code></p>
-            <p>{{ f.deviation_reason }}</p>
+            {% if f.plain_english %}
+              <p class="plain-en">{{ f.plain_english }}</p>
+            {% else %}
+              <p>{{ f.deviation_reason }}</p>
+            {% endif %}
+            <details class="evidence-stack" style="margin-top:0.35rem">
+              <summary class="meta">Why we flagged this</summary>
+              <p class="meta" style="margin:0.35rem 0">{{ f.deviation_reason }}</p>
+              <ul class="meta" style="margin:0.35rem 0 0;padding-left:1.1rem">
+                <li>Playbook rule: {{ f.playbook_rule_id }}</li>
+                <li>How matched:
+                  {% for src in f.sources %}
+                    {% if src == "rule" %}exact wording{% elif src == "semantic" %}similar meaning{% elif src == "llm" %}AI check{% else %}{{ src }}{% endif %}{% if not forloop.last %}, {% endif %}
+                  {% empty %}exact wording{% endfor %}
+                </li>
+              </ul>
+              <button type="button" class="btn btn-sm btn-ghost why-flagged-btn"
+                data-rule="{{ f.playbook_rule_id }}"
+                data-reason="{{ f.deviation_reason|escape }}"
+                data-plain="{{ f.plain_english|escape }}">Copy explanation</button>
+            </details>
             {% if f.clause_excerpt %}
               <p class="meta" style="margin-top:0.35rem">“{{ f.clause_excerpt|truncatechars:120 }}”</p>
             {% endif %}
-            {% if f.draft %}
-              <p class="meta">Draft: {{ f.draft.get_draft_source_display }}</p>
-            {% endif %}
             {% with last=f.decisions.first %}
               {% if last %}
-                <p class="ok">Decision recorded: {{ last.get_action_display }}</p>
+                <p class="ok">Saved: {{ last.get_action_display }}</p>
               {% else %}
                 <p style="margin-top:0.5rem">
-                  <a class="btn btn-sm" href="{% url 'review:rewrite' contract_id=contract.pk finding_id=f.pk %}">Review rewrite</a>
+                  <a class="btn btn-sm" href="{% url 'review:rewrite' contract_id=contract.pk finding_id=f.pk %}">Review &amp; decide</a>
                 </p>
               {% endif %}
             {% endwith %}
@@ -100,17 +179,93 @@
         {% endfor %}
       </ul>
     {% else %}
-      <p class="meta" style="padding:1rem">
-        {% if playbook_empty %}
-          No flags — set up a playbook to start checking against your standards.
-        {% else %}
-          No playbook rules matched this document.
-        {% endif %}
-      </p>
+      <div class="clean-flags-empty" style="padding:1rem">
+        <p><strong>No issues against your playbook</strong></p>
+        <p class="meta">Use the document pane to skim, then upload the next contract.</p>
+        <p style="margin-top:0.75rem">
+          <a class="btn btn-sm" href="{% url 'contracts:upload' %}">Upload another</a>
+        </p>
+      </div>
     {% endif %}
   </section>
 </div>
+
+{% if coverage_aligned or coverage_other %}
+  <details class="coverage-gaps rise-in" style="margin-top:1.25rem">
+    <summary><strong>Playbook coverage</strong> <span class="meta">(optional detail)</span></summary>
+    {% if coverage_aligned %}
+      <p class="meta" style="margin:0.75rem 0 0.25rem"><strong>Looks consistent</strong> with your preferred position</p>
+      <ul class="meta" style="margin:0 0 0.75rem;padding-left:1.1rem">
+        {% for g in coverage_aligned %}
+          <li>{{ g.preferred|truncatechars:90|default:g.playbook_rule_id }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if coverage_other %}
+      <p class="meta" style="margin:0 0 0.25rem"><strong>Not seen in this document</strong></p>
+      <ul class="meta" style="margin:0;padding-left:1.1rem">
+        {% for g in coverage_other %}
+          <li>{{ g.preferred|truncatechars:80|default:g.playbook_rule_id }} - {{ g.note }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </details>
+{% endif %}
+
+<details class="clean-pass-panel rise-in" style="margin-top:1rem">
+  <summary><strong>Something missing?</strong> Propose a new playbook rule</summary>
+  <p class="meta" style="margin:0.75rem 0">Paste the clause we missed. You still review and Activate before it becomes company policy.</p>
+  <form method="post" action="{% url 'review:missed_clause_create' contract_id=contract.pk %}">
+    {% csrf_token %}
+    <div class="field">
+      <label for="missed-excerpt">Clause excerpt</label>
+      <textarea id="missed-excerpt" name="excerpt" rows="4" required placeholder="Paste the language the playbook missed…"></textarea>
+    </div>
+    <div class="field">
+      <label for="missed-note">Note (optional)</label>
+      <input id="missed-note" type="text" name="note" placeholder="e.g. auto-renewal surprise">
+    </div>
+    <button type="submit" class="btn btn-sm">Propose rule</button>
+  </form>
+</details>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/highlight.js"></script>
+<script>
+(function () {
+  var btn = document.getElementById("copy-brief-btn");
+  if (btn) {
+    btn.addEventListener("click", async function () {
+      try {
+        var res = await fetch("{% url 'review:decision_brief' pk=contract.pk %}");
+        var data = await res.json();
+        var text = (data.subject || "") + "\n\n" + (data.body_markdown || "");
+        await navigator.clipboard.writeText(text);
+        btn.textContent = "Copied";
+        setTimeout(function () { btn.textContent = "Copy brief"; }, 2000);
+      } catch (e) {
+        btn.textContent = "Copy failed";
+      }
+    });
+  }
+  document.querySelectorAll(".why-flagged-btn").forEach(function (b) {
+    b.addEventListener("click", async function () {
+      var text = [
+        "Rule: " + (b.getAttribute("data-rule") || ""),
+        b.getAttribute("data-plain") || "",
+        b.getAttribute("data-reason") || "",
+        "",
+        "_Not legal advice._"
+      ].filter(Boolean).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        b.textContent = "Copied";
+        setTimeout(function () { b.textContent = "Copy explanation"; }, 1500);
+      } catch (e) {
+        b.textContent = "Copy failed";
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

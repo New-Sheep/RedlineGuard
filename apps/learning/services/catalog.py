@@ -74,7 +74,7 @@ def search_memory(
         row = provenance_from_hit(near_reject)
         row["usable"] = False
         row["blocked"] = True
-        row["note"] = "near reject — would skip memory reuse"
+        row["note"] = "near reject - would skip memory reuse"
         out.insert(0, row)
     # Also surface out-of-threshold hits for API transparency
     for h in hits:

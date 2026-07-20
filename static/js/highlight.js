@@ -1,6 +1,6 @@
 /**
- * Paint playbook hits into the document pane (PactPilot DocumentPane idea).
- * Uses start/end offsets when available; falls back to clause_excerpt search.
+ * Paint playbook hits into the document pane.
+ * Prefers start/end offsets; falls back to fuzzy excerpt search.
  */
 (function () {
   var root = document.getElementById("doc-highlight-root");
@@ -27,6 +27,7 @@
   } else {
     rawText = root.textContent || "";
   }
+  if (typeof rawText !== "string") rawText = String(rawText || "");
 
   function escapeHtml(s) {
     return String(s)
@@ -43,34 +44,87 @@
     return "medium";
   }
 
+  function normalizeWs(s) {
+    return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  /** Find excerpt in rawText; tolerate whitespace drift and ellipsis UI clips. */
+  function findExcerpt(excerpt) {
+    var ex = (excerpt || "").trim();
+    if (!ex) return -1;
+    var idx = rawText.indexOf(ex);
+    if (idx >= 0) return idx;
+
+    var normRaw = normalizeWs(rawText);
+    var normEx = normalizeWs(ex);
+    if (normEx.length >= 12) {
+      var nIdx = normRaw.indexOf(normEx);
+      if (nIdx >= 0) {
+        // Map normalized index back approximately via unique slice
+        var probe = normEx.slice(0, Math.min(48, normEx.length));
+        var p = normalizeWs(rawText).indexOf(probe);
+        if (p >= 0) {
+          // Walk rawText to find similar start
+          var compact = "";
+          for (var i = 0; i < rawText.length; i++) {
+            var ch = rawText[i];
+            if (/\s/.test(ch)) {
+              if (compact.length && compact[compact.length - 1] !== " ") compact += " ";
+            } else {
+              compact += ch;
+            }
+            if (compact.length >= probe.length && compact.slice(-probe.length) === probe) {
+              return Math.max(0, i - probe.length + 1);
+            }
+          }
+        }
+      }
+    }
+
+    // Progressive shorter probes (skip leading ellipsis junk)
+    var cleaned = ex.replace(/^\.{2,}\s*/, "").replace(/\s*\.{2,}$/, "");
+    var lengths = [80, 48, 32, 24];
+    for (var L = 0; L < lengths.length; L++) {
+      var n = lengths[L];
+      if (cleaned.length < n) continue;
+      var slice = cleaned.slice(0, n);
+      idx = rawText.indexOf(slice);
+      if (idx >= 0) return idx;
+      idx = rawText.toLowerCase().indexOf(slice.toLowerCase());
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  }
+
   function ranges() {
     var out = [];
     var len = rawText.length;
     findings.forEach(function (f) {
-      var start = f.start | 0;
-      var end = f.end | 0;
-      if (end > start && start < len) {
+      var start = Number(f.start) || 0;
+      var end = Number(f.end) || 0;
+      if (end > start && start < len && end <= len + 1) {
         out.push({
-          id: f.id,
+          id: String(f.id),
           start: Math.max(0, start),
           end: Math.min(len, end),
           severity: severityClass(f.severity),
         });
         return;
       }
-      var excerpt = (f.excerpt || "").trim();
-      if (!excerpt) return;
-      var idx = rawText.indexOf(excerpt);
-      if (idx < 0 && excerpt.length > 40) {
-        var slice = excerpt.slice(0, 40);
-        idx = rawText.indexOf(slice);
-        if (idx >= 0) excerpt = rawText.slice(idx, idx + Math.min(excerpt.length, 280));
-      }
+      // Offsets point past truncated pane — recover via excerpt
+      var excerpt = f.excerpt || "";
+      var idx = findExcerpt(excerpt);
       if (idx < 0) return;
+      var spanLen = Math.min(
+        Math.max((excerpt || "").trim().length, 40),
+        Math.max(end - start, 280),
+        len - idx
+      );
+      if (spanLen < 8) spanLen = Math.min(120, len - idx);
       out.push({
-        id: f.id,
+        id: String(f.id),
         start: idx,
-        end: idx + excerpt.length,
+        end: idx + spanLen,
         severity: severityClass(f.severity),
       });
     });
@@ -80,8 +134,9 @@
     var cleaned = [];
     var cursor = 0;
     out.forEach(function (r) {
-      if (r.start < cursor) return;
-      cleaned.push(r);
+      var s = Math.max(r.start, cursor);
+      if (r.end <= s) return;
+      cleaned.push({ id: r.id, start: s, end: r.end, severity: r.severity });
       cursor = r.end;
     });
     return cleaned;
@@ -109,9 +164,11 @@
     var trunc = root.getAttribute("data-truncated") === "1";
     if (trunc) html += "\n\n… (truncated)";
     root.innerHTML = html || escapeHtml(rawText);
+    root.setAttribute("data-mark-count", String(rs.length));
   }
 
   function selectFinding(id) {
+    id = String(id || "");
     document.querySelectorAll(".clause-mark.active").forEach(function (el) {
       el.classList.remove("active");
     });
@@ -123,11 +180,21 @@
     if (mark) {
       mark.classList.add("active");
       mark.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else if (card) {
+      // Still highlight the card so click isn't a no-op
+      card.classList.add("pulse-miss");
+      setTimeout(function () {
+        card.classList.remove("pulse-miss");
+      }, 900);
     }
     if (card) card.classList.add("active");
   }
 
   render();
+  // Clean / long docs: start at the top (not the empty schedules at the end)
+  try {
+    root.scrollTop = 0;
+  } catch (e) {}
 
   root.addEventListener("click", function (ev) {
     var mark = ev.target.closest(".clause-mark");

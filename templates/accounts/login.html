@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Sign in - RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Sign in</h1>
+  <p class="meta">Use a demo account below to explore the product.</p>
+</section>
+<form method="post" class="card-form rise-in" action="">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <ul class="messages"><li class="error">{{ form.non_field_errors }}</li></ul>
+  {% endif %}
+  <label>Username {{ form.username }}</label>
+  <label>Password {{ form.password }}</label>
+  {% if request.GET.next %}<input type="hidden" name="next" value="{{ request.GET.next }}">{% endif %}
+  <div class="form-actions">
+    <button type="submit" class="btn primary">Sign in</button>
+  </div>
+</form>
+<p class="meta"><code>lawyer</code> / <code>lawyer-demo-2026</code> · <code>admin</code> / <code>admin-demo-2026</code></p>
+<p class="meta">Not legal advice.</p>
+{% endblock %}

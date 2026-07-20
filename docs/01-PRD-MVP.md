@@ -6,8 +6,8 @@
 | **Document type** | MVP PRD (source of truth for what we ship) |
 | **Audience** | Builder(s), PortSwigger AI Pioneer take-home reviewers |
 | **Status** | Active — incorporates playbook / security / learning / playbook-onboarding UX |
-| **Last updated** | 2026-07-17 |
-| **Related docs** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`02-MVP-IMPLEMENTATION.md`](02-MVP-IMPLEMENTATION.md) · [`designs/`](../designs/) · [`gemini_brainstorm.md`](gemini_brainstorm.md) (raw ideas; see adopted/deferred) · [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) (post-MVP vision only) |
+| **Last updated** | 2026-07-18 — see [`07-MVP-AUDIT-CHECKPOINT.md`](07-MVP-AUDIT-CHECKPOINT.md) for shipped-vs-PRD scorecard |
+| **Related docs** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`13-HANDOFF.md`](13-HANDOFF.md) (clone / samples / no deploy) · [`02-MVP-IMPLEMENTATION.md`](02-MVP-IMPLEMENTATION.md) · [`07-MVP-AUDIT-CHECKPOINT.md`](07-MVP-AUDIT-CHECKPOINT.md) · [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md) (local Ollama co-pilots + memory — post-MVP) · [`designs/`](../designs/) · [`gemini_brainstorm.md`](gemini_brainstorm.md) (raw ideas; see adopted/deferred) · [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) (post-MVP vision only) |
 
 **Conflict rule:** This PRD beats `CLAUDE_PORTSWIGGER.md`, Visual Companion, and `gemini_brainstorm.md` for scope. Vision ideas not listed as **Must** / **Should** below are **out of MVP**.
 
@@ -99,7 +99,9 @@ Security is part of the product story (hostile PDFs, prompt injection), but **li
 | Auto-mutate golden playbook from Accept / Edit / Reject clicks | Learning goes to decision memory / overrides; golden file changes only via deliberate **Activate** after review |
 | Silently invent “real” risk flags when no playbook is active | Empty state + setup co-pilot instead — trust depends on citing company rules |
 | Unattended mining of a large contract corpus as Day-1 blocker | Starter from PDF **or** 3–5 past contracts is enough for demo; big corpus mining is post-MVP |
-| Hosted deploy (Railway/Vercel/etc.) unless they ask | Brief asks for a zip |
+| Hosted deploy (Railway/Vercel/etc.) | Brief asks for zip / local clone — see [`13-HANDOFF.md`](13-HANDOFF.md) |
+| Windows `.exe` installer | Not a packaging take-home; engineers run Python |
+| Docker Compose as the required path | Nice later; MVP ships **venv only** |
 | Fake trust badges (AES-256 / GDPR certified) | Don’t claim unbuilt controls |
 | Guaranteeing legal correctness | Assistant only |
 
@@ -201,7 +203,7 @@ Treat “no playbook” as **setup**, not failure.
 | N1 | `FAKE_LLM=1` fixtures for full UI demo without keys | Must |
 | N2 | Secrets only in `.env` / env vars | Must |
 | N3 | README: run, architecture-in-brief, security posture, limitations, data used | Must |
-| N4 | Local zip-friendly run (venv or Docker Compose — pick one and document) | Must |
+| N4 | Local zip/GitHub-friendly run via **venv** (`FAKE_LLM=1`; samples committed). No Docker / .exe / hosted URL required | Must |
 | N5 | Calm desktop UI aligned with Stitch 4 screens (no Team/Archive chrome) | Should |
 | N6 | Unit tests: sanitiser/fence, playbook load, schema validation, injection fixture | Should |
 
@@ -335,9 +337,10 @@ Do not build ReAct, Streamlit, or full vision security before P3. Prefer shippin
 |---|---|---|
 | Q1 | Django vs faster prototype shell? | Prefer Django per vision; don’t block P0 |
 | Q2 | Halt on injection vs fence-and-continue? | Halt on high-confidence heuristic; else fence |
-| Q3 | Hosted URL? | Not unless they confirm; zip + local |
+| Q3 | Hosted URL? | **No** — GitHub clone or zip + local run ([`13-HANDOFF.md`](13-HANDOFF.md)) |
 | Q4 | Demo with empty playbook or always ship golden JSON? | Ship golden for Loom Journey A; still show empty-state path in UI or Loom beat |
 | Q5 | E2 (past contracts) in MVP zip? | Should — cut to Could if time; E1 PDF path is higher priority |
+| Q6 | Share sample documents? | **Yes** — Quick demos + playbook PDFs commit with the repo |
 
 ---
 

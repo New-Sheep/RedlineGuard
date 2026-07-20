@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Audit - RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Audit log</h1>
+  <p class="meta">Who did what, in order.
+    {% if chain_ok %}<span class="ok">Integrity check OK</span>{% else %}<strong>Integrity warning</strong> - {{ chain_msg }}{% endif %}
+  </p>
+</section>
+
+<form method="get" class="filters rise-in" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 1rem;align-items:end">
+  <label class="meta">Kind
+    <select name="kind">
+      <option value="">All</option>
+      {% for val, label in kind_choices %}
+        <option value="{{ val }}" {% if kind_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-sm">Filter</button>
+</form>
+
+{% if events %}
+  <table class="history-table rise-in">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>Kind</th>
+        <th>Summary</th>
+        <th>Contract</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in events %}
+        <tr>
+          <td>{{ e.created_at|date:"Y-m-d H:i" }}</td>
+          <td><span class="badge">{{ e.get_kind_display }}</span></td>
+          <td>{{ e.summary }}</td>
+          <td>
+            {% if e.contract_id %}
+              <a href="{% url 'contracts:detail' pk=e.contract_id %}">{{ e.contract.filename }}</a>
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+{% else %}
+  <p class="meta">No audit events yet.</p>
+{% endif %}
+{% endblock %}

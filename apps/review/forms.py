@@ -4,7 +4,9 @@ from pathlib import Path
 
 from django import forms
 from django.conf import settings
+from django.core.exceptions import ValidationError as DjangoValidationError
 
+from apps.core.uploads import validate_upload_size
 from apps.review.services.playbook_bootstrap import PlaybookRule
 
 
@@ -19,6 +21,21 @@ def list_playbook_samples() -> list[str]:
     )
 
 
+def list_starter_contract_samples() -> list[str]:
+    """Past-contract samples for E2 (scratch corpus; exclude injection fixtures)."""
+    corpus = Path(settings.SCRATCH_CORPUS_DIR)
+    if not corpus.is_dir():
+        return []
+    skip = {"injection_hostile.txt"}
+    return sorted(
+        p.name
+        for p in corpus.iterdir()
+        if p.is_file()
+        and p.suffix.lower() in {".pdf", ".txt"}
+        and p.name not in skip
+    )
+
+
 class PlaybookIngestForm(forms.Form):
     sample_key = forms.ChoiceField(choices=[], required=False, label="Sample playbook")
     upload = forms.FileField(required=False, label="Or upload a playbook PDF / TXT")
@@ -26,7 +43,7 @@ class PlaybookIngestForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         samples = list_playbook_samples()
-        self.fields["sample_key"].choices = [("", "— select a sample —")] + [
+        self.fields["sample_key"].choices = [("", "- select a sample -")] + [
             (n, n) for n in samples
         ]
 
@@ -42,6 +59,65 @@ class PlaybookIngestForm(forms.Form):
             name = getattr(upload, "name", "") or ""
             if Path(name).suffix.lower() not in {".pdf", ".txt"}:
                 raise forms.ValidationError("Only PDF or TXT uploads are supported.")
+            try:
+                validate_upload_size(upload)
+            except DjangoValidationError as exc:
+                raise forms.ValidationError(exc.messages) from exc
+        return cleaned
+
+
+class PlaybookStarterForm(forms.Form):
+    """E2: propose a starter playbook from 3–5 past contracts."""
+
+    sample_keys = forms.MultipleChoiceField(
+        choices=[],
+        required=False,
+        label="Sample past contracts",
+        widget=forms.CheckboxSelectMultiple,
+        help_text="Pick corpus NDAs / contracts you have seen before.",
+    )
+    uploads = forms.FileField(
+        required=False,
+        label="Or upload PDF / TXT files",
+        # Multiple files collected via request.FILES.getlist("uploads") in the view;
+        # template renders <input type="file" multiple>.
+    )
+    liked = forms.BooleanField(
+        required=False,
+        initial=True,
+        label="Treat these as liked / preferred paper (shapes preferred positions)",
+    )
+
+    def __init__(self, *args, upload_list: list | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.upload_list = list(upload_list or [])
+        samples = list_starter_contract_samples()
+        self.fields["sample_keys"].choices = [(n, n) for n in samples]
+
+    def clean(self):
+        cleaned = super().clean()
+        samples = list(cleaned.get("sample_keys") or [])
+        upload_list = list(self.upload_list)
+        if not upload_list:
+            single = cleaned.get("uploads")
+            if single:
+                upload_list = [single]
+        cleaned["_upload_list"] = upload_list
+
+        for f in upload_list:
+            name = getattr(f, "name", "") or ""
+            if Path(name).suffix.lower() not in {".pdf", ".txt"}:
+                raise forms.ValidationError(
+                    f"Only PDF or TXT uploads are supported ({name})."
+                )
+
+        total = len(samples) + len(upload_list)
+        if total < 3:
+            raise forms.ValidationError(
+                "Select or upload at least 3 past contracts (up to 5)."
+            )
+        if total > 5:
+            raise forms.ValidationError("Use at most 5 past contracts for a starter.")
         return cleaned
 
 

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Trust - RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>How RedlineGuard earns trust</h1>
+  <p class="meta">Plain answers for counsel and security reviewers.</p>
+</section>
+
+<article class="clean-pass-panel rise-in">
+  <h2>What you see on every flag</h2>
+  <ul>
+    <li>Which company rule it cites</li>
+    <li>A short plain-English reason</li>
+    <li>Optional technical detail (how it matched)</li>
+  </ul>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>What you see on every rewrite</h2>
+  <ul>
+    <li>Where the draft came from (past decision, playbook, or AI)</li>
+    <li>Optional step-by-step of the draft agent (no secrets)</li>
+  </ul>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>Security basics</h2>
+  <ul>
+    <li>Hostile uploads can halt the review</li>
+    <li>Personal data is stripped before AI calls when possible</li>
+    <li>Sign-in + CSRF protect destructive actions</li>
+  </ul>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>Audit trail</h2>
+  <p>Decisions and admin resets are logged in an append-only chain. We never delete the audit log from the product UI.</p>
+</article>
+
+<article class="clean-pass-panel rise-in">
+  <h2>What we do not claim</h2>
+  <ul>
+    <li>Not legal advice</li>
+    <li>Not a certified compliance product</li>
+    <li>Not full enterprise SSO</li>
+  </ul>
+</article>
+{% endblock %}

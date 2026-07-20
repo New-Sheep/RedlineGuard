@@ -98,10 +98,11 @@ Ignore Stitch’s Dashboard / Team / Archive chrome.
 | Full enterprise security (hash chains, SSO, pen-test) | Demo lite + honest README |
 | Auto-changing the company playbook every time Sarah clicks Accept | Learning goes to memory / overrides; golden playbook only changes when she deliberately Activates a reviewed proposal |
 | Silent “AI risk flags” with no playbook | Trust requires citing company rules |
-| Hosted Railway/Vercel unless they ask | Zip + local is enough |
+| Hosted Railway/Vercel unless they ask | Zip / GitHub clone + local is enough ([`13-HANDOFF.md`](13-HANDOFF.md)) |
 | Fake “GDPR certified” badges | Don’t lie |
+| Docker / `.exe` as the only way to try | Ship venv; samples committed |
 
-Details: [01-PRD-MVP.md](01-PRD-MVP.md). How the running app fits together: [06-PRODUCT-MAP.md](06-PRODUCT-MAP.md). How to build: [02-MVP-IMPLEMENTATION.md](02-MVP-IMPLEMENTATION.md).
+Details: [01-PRD-MVP.md](01-PRD-MVP.md). How reviewers get the code: [13-HANDOFF.md](13-HANDOFF.md). How the running app fits together: [06-PRODUCT-MAP.md](06-PRODUCT-MAP.md). How to build: [02-MVP-IMPLEMENTATION.md](02-MVP-IMPLEMENTATION.md).
 
 ---
 
@@ -115,7 +116,7 @@ Details: [01-PRD-MVP.md](01-PRD-MVP.md). How the running app fits together: [06-
 - [ ] Empty playbook = onboarding (not crash / not invented flags)  
 - [ ] Propose → Activate human gate (PDF path at minimum)  
 - [ ] Works with fake/offline AI mode  
-- [ ] README: approach, data, security, limits, not legal advice  
+- [ ] README + handoff: clone/venv, samples included, no deploy required  
 - [ ] Short Loom  
 
 ---
@@ -139,3 +140,5 @@ Details: [01-PRD-MVP.md](01-PRD-MVP.md). How the running app fits together: [06-
 **Set up the playbook (if needed) → upload → check playbook → flag/counter → decide → remember — with a basic shield against hostile PDFs.**
 
 That’s the take-home. Vision docs are the sequel, not the homework.
+
+**Local Ollama lawyer-assistant enhancements** (playbook propose, rewrite co-pilot, memory explain/rank, briefs, gaps): see [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md).

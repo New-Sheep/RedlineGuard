@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Starter from past contracts - RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Draft a starter from past contracts</h1>
+  <p>
+    Upload or pick <strong>3-5</strong> NDAs / order forms you’ve seen before.
+    We’ll propose a starter playbook - you review and Activate before anything goes live.
+  </p>
+  <p class="meta">Proposed rules are not company policy until you Activate.</p>
+  <p>
+    <a href="{% url 'review:playbook_import' %}">Import a firm playbook PDF instead</a>
+    ·
+    <a href="{% url 'review:playbook_active' %}">Active playbook</a>
+  </p>
+</section>
+
+<form method="post" enctype="multipart/form-data" class="card-form rise-in" style="max-width:36rem">
+  {% csrf_token %}
+  {% if form.non_field_errors %}
+    <div class="form-errors">{{ form.non_field_errors }}</div>
+  {% endif %}
+  <div class="field">
+    <label>{{ form.sample_keys.label }}</label>
+    {{ form.sample_keys }}
+    <p class="help">{{ form.sample_keys.help_text }}</p>
+    {{ form.sample_keys.errors }}
+  </div>
+  <p class="or">and / or</p>
+  <div class="field">
+    <label for="{{ form.uploads.id_for_label }}">{{ form.uploads.label }}</label>
+    <input type="file" name="uploads" id="{{ form.uploads.id_for_label }}" multiple accept=".pdf,.txt,application/pdf,text/plain">
+    {{ form.uploads.errors }}
+  </div>
+  <div class="field">
+    <label>{{ form.liked }} {{ form.liked.label }}</label>
+    {{ form.liked.errors }}
+  </div>
+  <button type="submit" class="btn">Propose starter rules</button>
+  <p class="help">Security check runs on the combined text. Nothing goes live until you Activate.</p>
+</form>
+{% endblock %}

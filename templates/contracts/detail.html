@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}{{ contract.filename }} — RedlineGuard{% endblock %}
+{% block title %}{{ contract.filename }} - RedlineGuard{% endblock %}
 {% block content %}
-<p><a href="{% url 'contracts:upload' %}">&larr; New upload</a></p>
+<p><a href="{% url 'contracts:list' %}">&larr; All contracts</a>
+  · <a href="{% url 'contracts:upload' %}">New upload</a></p>
 
-<section class="hero">
+<section class="hero rise-in">
   <h1>{{ contract.filename }}</h1>
   <p class="meta">
     Status: <strong>{{ contract.get_status_display }}</strong>
@@ -11,21 +12,31 @@
     · Quality: <strong>{{ contract.quality|default:"n/a" }}</strong>
     · Pages: {{ contract.page_count }}
     · Chars: {{ contract.char_count }}
+    {% if run %} · Score {{ run.risk_score }} · {{ run.playbook_name }}{% endif %}
+  </p>
+  <p style="margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.5rem">
+    {% if contract.status == "ready" %}
+      <a class="btn" href="{% url 'contracts:review' pk=contract.pk %}">Open review</a>
+    {% elif contract.status == "halted" %}
+      <a class="btn" href="{% url 'security:alert' pk=contract.pk %}">Security alert</a>
+    {% elif contract.status == "processing" or contract.status == "uploaded" or contract.status == "extracted" %}
+      <a class="btn" href="{% url 'contracts:processing' pk=contract.pk %}">Processing</a>
+    {% endif %}
+    {% if contract.file %}
+      <a class="btn btn-ghost" href="{{ contract.file.url }}" target="_blank" rel="noopener">Download source</a>
+    {% endif %}
   </p>
 </section>
 
 {% if contract.status == "failed" %}
   <div class="alert error">
-    <strong>Extract failed</strong>
+    <strong>Failed</strong>
     <pre>{{ contract.error_message }}</pre>
   </div>
-{% else %}
-  <section class="preview">
+{% elif preview %}
+  <section class="preview rise-in">
     <h2>Extracted text{% if truncated %} (preview){% endif %}</h2>
     <pre class="doc-text">{{ preview }}</pre>
-    {% if truncated %}
-      <p class="help">Showing first {{ preview|length }} of {{ contract.char_count }} characters.</p>
-    {% endif %}
   </section>
 {% endif %}
 {% endblock %}

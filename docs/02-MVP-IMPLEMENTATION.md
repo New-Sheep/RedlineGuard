@@ -16,7 +16,7 @@
 | LLM | One cloud provider SDK **or** HTTP client + **`FAKE_LLM=1` fixtures** | No LangGraph/agents in MVP |
 | Config | `data/playbook_config.json` + optional `playbook_overrides.json` | Source of truth for rules |
 | DB | SQLite via Django ORM | Decisions, contracts, flags |
-| Run | `venv` + `manage.py runserver` **or** one `docker compose` | Document one path in README |
+| Run | `venv` + `manage.py runserver` only | See README + [`13-HANDOFF.md`](13-HANDOFF.md). **No Docker / .exe / hosted deploy** in MVP |
 
 **Explicitly deferred tech:** Streamlit, LangGraph, Chroma-at-scale, Ollama routing, Celery, React rewrite.
 
@@ -39,8 +39,10 @@ redlineguard/
 ├── data/
 │   ├── playbook_config.json   # HAND-AUTHORED golden rules
 │   ├── playbook_overrides.json
-│   ├── samples/               # clean NDA/MSA + injection sample
-│   └── precedents/            # optional 2–3 short accepted snippets
+│   ├── scratch_corpus/        # Quick demos + other sample contracts (committed)
+│   ├── playbook_corpus/       # playbook PDF import samples
+│   ├── malicious_corpus/      # hostile / injection samples
+│   └── precedents/            # optional seed for Journey B
 ├── templates/                 # upload, processing, review, rewrite partial, alert, history
 ├── static/
 └── docs/                      # this PRD set
@@ -205,7 +207,7 @@ When playbook is empty: Review/Upload should nudge setup — do **not** show fak
 | ReAct draft agent | **Defer** |
 | Chroma learning loop at scale | **Defer** (simple decision examples OK; memory ≠ invent playbook) |
 | Hash-chain audit / full PII / local router | **Defer** (document only) |
-| Docker Compose | Optional convenience |
+| Docker Compose | **Not shipped** — see [`13-HANDOFF.md`](13-HANDOFF.md); venv only |
 
 ---
 

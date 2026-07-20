@@ -1,33 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Upload — RedlineGuard{% endblock %}
+{% block title %}Upload - RedlineGuard{% endblock %}
 {% block container_class %} narrow{% endblock %}
 {% block content %}
 <section class="upload-hero rise-in">
   <h1>Upload a contract</h1>
-  <p>First-pass check against your company playbook — then decide.</p>
-  <ol class="steps">
-    <li>Security scan</li>
-    <li>Playbook compare</li>
-    <li>Draft counters</li>
-  </ol>
+  <p>We check it against your company playbook, then you decide.</p>
 </section>
+
+<div class="upload-demos rise-in">
+  <p class="upload-demos-label">Quick demos</p>
+  <form method="post" class="upload-demos-row">
+    {% csrf_token %}
+    <button class="btn btn-sm" type="submit" name="sample_key" value="demo_clean_flags.txt">Sample with issues</button>
+    <button class="btn btn-ghost btn-sm" type="submit" name="sample_key" value="demo_short_nda.txt">Short NDA</button>
+    <button class="btn btn-ghost btn-sm" type="submit" name="sample_key" value="injection_hostile.txt">Hostile sample</button>
+  </form>
+</div>
 
 <form method="post" enctype="multipart/form-data" class="card-form upload-card rise-in">
   {% csrf_token %}
   {% if form.non_field_errors %}
     <div class="form-errors">{{ form.non_field_errors }}</div>
   {% endif %}
-  <div class="field">
-    <label for="{{ form.sample_key.id_for_label }}">{{ form.sample_key.label }}</label>
+  <div class="field field-full">
+    <label for="{{ form.sample_key.id_for_label }}">Or choose a sample file</label>
     {{ form.sample_key }}
-    <p class="help">Prefer the Demo — samples for a reliable Loom path.</p>
   </div>
   <p class="or">or</p>
-  <div class="field">
-    <label for="{{ form.upload.id_for_label }}">{{ form.upload.label }}</label>
+  <div class="field field-full">
+    <label for="{{ form.upload.id_for_label }}">Upload PDF / Word / text</label>
     {{ form.upload }}
-    {% if form.upload.help_text %}<p class="help">{{ form.upload.help_text }}</p>{% endif %}
+    <p class="help">Text-based PDFs work best. Scanned image PDFs usually fail.</p>
   </div>
-  <button type="submit" class="btn">Analyze contract</button>
+  <div class="form-actions">
+    <button type="submit" class="btn">Analyze</button>
+  </div>
 </form>
 {% endblock %}

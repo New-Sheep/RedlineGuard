@@ -42,3 +42,22 @@ def test_missing_file():
 def test_assess_quality_empty():
     assert assess_quality("") == "poor"
     assert assess_quality("a b c d e f g h") == "poor"
+
+
+def test_image_only_offer_letter_fails_fast():
+    """E-sign / scan PDFs have no text layer — abort early, don't walk all pages."""
+    offer = Path(
+        r"c:\Users\ankit\Downloads\Offer letter e-signed_Ankit_Yadav.pdf"
+    )
+    if not offer.is_file():
+        pytest.skip("offer letter PDF not on this machine")
+    import time
+
+    t0 = time.time()
+    r = extract_pdf(offer)
+    elapsed = time.time() - t0
+    assert r["char_count"] == 0 or not (r["text"] or "").strip()
+    assert r.get("image_only_suspected") is True
+    assert "hint" in r
+    # Full pdfplumber walk was ~45s; early abort should be well under 20s
+    assert elapsed < 20, f"extract too slow for image-only PDF: {elapsed:.1f}s"

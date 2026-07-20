@@ -4,8 +4,11 @@
 > 1. [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md)
 > 2. [`01-PRD-MVP.md`](01-PRD-MVP.md)
 > 3. [`02-MVP-IMPLEMENTATION.md`](02-MVP-IMPLEMENTATION.md)
+> 4. [`13-HANDOFF.md`](13-HANDOFF.md) — how reviewers actually run the app
 >
-> This document is the **broader vision / engineering wishlist**. Anything here that is not a PRD **Must/Should** is **out of MVP** (including ReAct agents, full audit hash chain, multi-provider routing, Chroma-at-scale, rich dashboard). Prefer Django + playbook + fence + decisions as in the MVP implementation guide — **do not** switch to Streamlit from the Gemini brainstorm.
+> This document is the **broader vision / engineering wishlist**. Anything here that is not a PRD **Must/Should** is **out of MVP**.
+>
+> **Delivery reality (do not invent packaging):** reviewers **clone GitHub or unzip** and run **`venv` + `manage.py runserver`**. There is **no** shipped `docker-compose.yml`, **no** `.exe`, and **no** hosted deploy for this take-home. Sample contracts for Quick demos **are** in `data/`. See README + handoff. Prefer Django + playbook + fence + decisions as in the MVP implementation guide — **do not** switch to Streamlit from the Gemini brainstorm.
 
 Guidance for Cursor (and humans) working in this repo. Read the MVP trio above first; use this file for post-MVP depth and naming inspiration.
 
@@ -62,7 +65,7 @@ Read these three principles as gospel — they saved PactPilot's demo from disas
 | LLM orchestration | LangChain + LangGraph on OCI Gen AI | LangChain + LangGraph, multi-provider fallback + local Ollama | Production-grade reliability and privacy routing |
 | Vector store | Oracle 23ai AI Vector Search | ChromaDB (local, persisted) with FAISS as swap-in | Local demo, no cloud dependency |
 | Storage | OCI Object Storage | Local filesystem for the demo, S3-compatible interface for production | Local demo; interface makes S3 swap trivial |
-| Deploy | OCI Compute (Ampere) | Docker Compose for demo | Reviewers can run it in one command |
+| Deploy | OCI Compute (Ampere) | **Local venv demo** (Docker Compose = vision only, not shipped) | Reviewers clone + run; see [`13-HANDOFF.md`](13-HANDOFF.md) |
 | PII detection | Not addressed | spaCy en_core_web_sm + regex, with reversible token replacement | Security requirement, not optional |
 | Injection defence | Not addressed | Regex patterns + LLM-as-judge second check, halts pipeline on detection | Security requirement, not optional |
 | Audit trail | Not addressed | Postgres append-only log with hash chain | Security requirement, not optional |
@@ -76,8 +79,8 @@ Read these three principles as gospel — they saved PactPilot's demo from disas
 ```
 redlineguard/
 ├── CLAUDE.md                        # this file
-├── README.md                        # public-facing, human-first
-├── docker-compose.yml               # one-command demo
+├── README.md                        # public-facing, human-first (venv run path)
+├── # docker-compose.yml             # NOT SHIPPED — aspirational only (see 13-HANDOFF)
 ├── .env.example                     # never commit .env itself
 ├── requirements.txt
 ├── manage.py
@@ -405,12 +408,11 @@ Do not skip ahead. Each milestone unlocks the next.
 
 ### Day 1: Foundations + canned pipeline
 
-**M1: Repo scaffold and Docker Compose**
+**M1: Repo scaffold (venv, not Docker)**
 - Django project + apps as per Section 4
-- `docker-compose.yml` with Postgres + Django + (later) Ollama
-- `.env.example` with placeholders
-- `pip install`, migrations run, superuser created
-- `curl localhost:8000/api/health/` returns `{"status": "ok"}`
+- `.env.example` with `FAKE_LLM=1` (Docker Compose = post-MVP wishlist only)
+- `pip install`, migrations run, `bootstrap_demo_users`
+- Health or Upload page loads on `runserver`
 
 **M2: The frozen schemas**
 - Write `apps/api/schemas.py` verbatim from Section 5
@@ -524,33 +526,30 @@ Do not skip ahead. Each milestone unlocks the next.
 
 ## 11. Running locally
 
+> **Shipped path:** see [`README.md`](../README.md) and [`13-HANDOFF.md`](13-HANDOFF.md). The block below is the **aspirational** vision layout; do not treat Docker / Postgres / Ollama container as required.
+
 ```bash
-# Clone, install
-git clone <repo>
-cd redlineguard
-cp .env.example .env    # fill in placeholders; FAKE_LLM=1 for no-cloud dev
+# Clone, install (MVP — what reviewers actually do)
+git clone https://github.com/New-Sheep/RedlineGuard.git
+cd RedlineGuard
+python -m venv .venv
+# activate venv, then:
+cp .env.example .env    # FAKE_LLM=1; for fast first run also FAKE_EMBED=1
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py createsuperuser
-
-# Seed precedent (once)
-python scripts/seed_precedent.py
-
-# Run
-docker compose up               # brings up postgres + django + ollama
-# or
+python manage.py bootstrap_demo_users
+python manage.py seed_precedents   # optional Journey B
 python manage.py runserver
-
-# Open http://localhost:8000
+# Open http://127.0.0.1:8000/ — sign in lawyer / lawyer-demo-2026
 ```
 
-**No cloud access is ever required to run the app.** `FAKE_LLM=1` stubs every provider. The local Ollama container ships with Gemma-2B pre-pulled.
+**No cloud access is ever required.** `FAKE_LLM=1` stubs LLM drafts. Sample contracts for Quick demos are already under `data/scratch_corpus/`.
 
 ---
 
 ## 12. Guardrails — what Cursor must not do
 
-- **Do not add auth beyond Django admin.** No SSO, no OAuth, no RBAC. This is a demo.
+- **Do not add SSO / OAuth.** Session login + `lawyer`/`admin` demo roles is enough for the take-home ([`13-HANDOFF.md`](13-HANDOFF.md)).
 - **Do not add a real background job queue.** No Celery, no Redis Queue. Pipeline runs synchronously; if it takes too long, that is a design signal, not a scaling problem.
 - **Do not add analytics beacons, telemetry, or third-party tracking.** This is a legal tool. Analytics endpoints inside the app are fine.
 - **Do not add "delight" animations, gamification, or emoji-heavy UI copy.** Sarah is a lawyer. Tone is calm, precise, direct.
@@ -563,22 +562,28 @@ python manage.py runserver
 
 ---
 
-## 13. The submission zip contents
+## 13. The submission zip / GitHub contents
 
-At the end, the zip should contain:
+Prefer a **GitHub repo** they can clone; a zip of the same tree is fine. Must include:
 
 ```
-redlineguard/
+RedlineGuard/
 ├── (full source tree)
-├── README.md                        # architecture + security + honest limitations + how-to-run
+├── README.md                        # how-to-run + Loom journeys + honest limits
 ├── docs/
-│   ├── PRD.pdf                      # the full PRD we already wrote
-│   ├── VisualCompanion.pdf          # the companion doc for screens/flows
-│   └── architecture_diagram.png     # exported from Claude visualisation
-├── LOOM_LINK.md                     # 5-8 minute walkthrough
-├── data/samples/                    # 3-5 sample contracts to demo on
-└── LICENCE                          # MIT for the demo code (make clear it is demo code)
+│   ├── 13-HANDOFF.md                # delivery decisions (clone, samples, no deploy)
+│   ├── 01-PRD-MVP.md
+│   └── …                            # product map, audits as needed
+├── data/
+│   ├── scratch_corpus/              # Quick demos (demo_*.txt, injection_hostile.txt)
+│   ├── playbook_corpus/             # playbook PDF samples
+│   ├── playbook_config.json         # golden rules for Journey A
+│   └── precedents/                  # optional seed
+├── .env.example
+└── (optional) LOOM_LINK.md
 ```
+
+Do **not** require Docker, an installer, or a hosted URL. Do **not** omit the demo samples.
 
 ---
 
@@ -610,7 +615,7 @@ Also paste the **Security posture** paragraph from Section 20.7 near the top of 
 
 RedlineGuard is done when:
 
-- [ ] `docker compose up` on a clean machine gets a reviewer to the Upload screen in under 60 seconds
+- [ ] `python manage.py runserver` on a clean machine (venv + `FAKE_LLM=1` + `FAKE_EMBED=1`) gets a reviewer to Upload in under 10 minutes — see [`13-HANDOFF.md`](13-HANDOFF.md). Docker Compose is **not** the MVP bar.
 - [ ] Uploading a sample contract shows a real Review screen with real flags in under 15 seconds (cloud) or 45 seconds (local)
 - [ ] An intentional injection payload triggers the Security Alert modal, not a silent failure
 - [ ] Accepting 3 drafts on similar clauses causes the 4th similar clause to retrieve those 3 as precedents

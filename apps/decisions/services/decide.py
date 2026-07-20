@@ -1,9 +1,10 @@
-"""Persist Accept / Edit / Reject / Override and optionally write Chroma memory."""
+"""Persist Accept / Edit / Reject / Override / False-positive and memory."""
 
 from __future__ import annotations
 
 from apps.contracts.models import Contract
-from apps.decisions.models import Decision
+from apps.decisions.models import AuditEvent, Decision
+from apps.decisions.services.lifecycle import log_audit
 from apps.learning.services.memory import add_decision_record
 from apps.review.models import Finding
 from apps.review.services.overrides import append_override
@@ -14,7 +15,6 @@ def _clause_text_for_memory(finding: Finding) -> str:
     excerpt = (finding.clause_excerpt or "").strip()
     if excerpt:
         return excerpt[:4000]
-    # Legacy fallback for findings created before Sprint 5
     return (finding.deviation_reason or finding.clause_name or finding.playbook_rule_id or "")[
         :4000
     ]
@@ -35,12 +35,12 @@ def record_decision(
         Decision.Action.EDIT,
         Decision.Action.REJECT,
         Decision.Action.OVERRIDE,
+        Decision.Action.FALSE_POSITIVE,
     }:
         raise ValueError(f"Unknown action: {action}")
 
     text = (final_text or "").strip()
     if action == Decision.Action.OVERRIDE:
-        # Keep original clause language as "as-is"
         text = text or finding.suggested_counter or finding.deviation_reason or ""
         append_override(
             playbook_rule_id=finding.playbook_rule_id,
@@ -49,12 +49,14 @@ def record_decision(
             clause_excerpt=finding.clause_excerpt or finding.deviation_reason or "",
         )
         write_memory = False
+    elif action == Decision.Action.FALSE_POSITIVE:
+        text = text or finding.clause_excerpt or ""
+        write_memory = False
     elif action in (Decision.Action.ACCEPT, Decision.Action.EDIT) and not text:
         draft = getattr(finding, "draft", None)
         text = (draft.draft_text if draft else "") or finding.suggested_counter or ""
 
     chroma_id = ""
-    # Accept/Edit with text → positive precedent; Reject → avoid signal (P1)
     memory_actions = {
         Decision.Action.ACCEPT,
         Decision.Action.EDIT,
@@ -76,7 +78,21 @@ def record_decision(
             add_decision_record(record)
             chroma_id = record.id
 
-    return Decision.objects.create(
+    memory_meta: dict = {}
+    if chroma_id:
+        try:
+            from apps.review.services.memory_assist import enrich_decision
+
+            memory_meta = enrich_decision(
+                action=action,
+                rule_id=finding.playbook_rule_id,
+                clause_excerpt=_clause_text_for_memory(finding),
+                final_text=text,
+            )
+        except Exception:
+            memory_meta = {}
+
+    decision = Decision.objects.create(
         finding=finding,
         contract=contract,
         action=action,
@@ -84,4 +100,23 @@ def record_decision(
         reasoning=reasoning,
         chroma_id=chroma_id,
         memory_active=bool(chroma_id),
+        memory_meta=memory_meta,
     )
+
+    kind = AuditEvent.Kind.DECISION
+    if action == Decision.Action.OVERRIDE:
+        kind = AuditEvent.Kind.OVERRIDE
+    elif action == Decision.Action.FALSE_POSITIVE:
+        kind = AuditEvent.Kind.FALSE_POSITIVE
+    log_audit(
+        kind=kind,
+        summary=f"{action} · {finding.playbook_rule_id} · {contract.filename}",
+        payload={
+            "action": action,
+            "rule_id": finding.playbook_rule_id,
+            "finding_id": str(finding.id),
+        },
+        contract=contract,
+        decision=decision,
+    )
+    return decision

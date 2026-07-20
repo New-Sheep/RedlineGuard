@@ -62,6 +62,40 @@ def append_override(
     return entry
 
 
+def save_overrides(data: dict[str, Any] | None = None) -> None:
+    """Replace overrides file (admin reset). Preserves schema version."""
+    path = overrides_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = data if data is not None else {"version": 1, "overrides": []}
+    if "overrides" not in payload:
+        payload["overrides"] = []
+    payload.setdefault("version", 1)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+
+def revoke_override(*, playbook_rule_id: str, contract_id: str = "") -> int:
+    """Remove matching override rows. Returns count removed."""
+    path = overrides_path()
+    data = load_overrides()
+    rows = list(data.get("overrides") or [])
+    kept: list[dict[str, Any]] = []
+    removed = 0
+    rid = (playbook_rule_id or "").strip()
+    cid = (contract_id or "").strip()
+    for row in rows:
+        match_rule = (row.get("playbook_rule_id") or "").strip() == rid
+        match_contract = (not cid) or (str(row.get("contract_id") or "") == cid)
+        if match_rule and match_contract:
+            removed += 1
+            continue
+        kept.append(row)
+    if removed:
+        data["overrides"] = kept
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return removed
+
+
 def merge_playbook_with_overrides(playbook: dict[str, Any]) -> dict[str, Any]:
     """Return a playbook copy with overridden rules removed from compare."""
     merged = deepcopy(playbook)

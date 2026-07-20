@@ -15,6 +15,11 @@ class SecurityEvent(models.Model):
     halt = models.BooleanField(default=False)
     matches = models.JSONField(default=list, blank=True)
     summary = models.TextField(blank=True, default="")
+    adjudication = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="LLM/heuristic second opinion after cue halt",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

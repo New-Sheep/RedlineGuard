@@ -1,30 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Security alert — RedlineGuard{% endblock %}
+{% block title %}Security alert - RedlineGuard{% endblock %}
 {% block container_class %} narrow{% endblock %}
 {% block content %}
 <section class="hero rise-in">
-  <h1>Security alert</h1>
+  <h1>Upload stopped</h1>
   <p class="meta">{{ contract.filename }}</p>
 </section>
-<div class="alert error rise-in">
-  <p><strong>This upload was halted.</strong> It looks like prompt injection or instruction-override language — we will not treat it as a clean contract review.</p>
-  {% if event %}
-    <p>{{ event.summary }}</p>
-    {% if event.matches %}
-      <p>Matched cues:</p>
+
+<div class="security-halt-panel rise-in">
+  <p class="security-halt-lead">
+    {% if adjudication.plain_english %}
+      {{ adjudication.plain_english }}
+    {% else %}
+      This file looks like it is trying to override the AI (prompt injection). We will not run a normal contract review on it.
+    {% endif %}
+  </p>
+
+  {% if adjudication.excerpt_quote %}
+    <blockquote class="security-halt-quote">“{{ adjudication.excerpt_quote|truncatechars:160 }}”</blockquote>
+  {% endif %}
+
+  <ol class="steps security-halt-steps">
+    <li class="done">Document read</li>
+    <li class="halt">Security check stopped here</li>
+    <li class="muted">Playbook compare skipped</li>
+    <li class="muted">Draft skipped</li>
+  </ol>
+
+  {% if event.matches %}
+    <details class="security-halt-details">
+      <summary>What triggered this</summary>
       <ul>
         {% for m in event.matches %}
-          <li><code>{{ m }}</code></li>
+          {% if "[compact]" not in m|lower %}
+            <li>{{ m }}</li>
+          {% endif %}
         {% endfor %}
       </ul>
-    {% endif %}
+      {% if adjudication.verdict or adjudication.cue_class %}
+        <p class="meta" style="margin-top:0.75rem">
+          Reviewer note:
+          {% if adjudication.cue_class == "hard" %}strong signal{% elif adjudication.cue_class == "ambiguous" %}ambiguous signal{% else %}{{ adjudication.cue_class }}{% endif %}
+          {% if adjudication.verdict %} · decision {{ adjudication.verdict }}{% endif %}
+        </p>
+      {% endif %}
+    </details>
   {% endif %}
 </div>
-<ol class="steps rise-in">
-  <li class="done">Reading document</li>
-  <li class="halt">Security check — stopped here</li>
-  <li class="muted">Playbook compare — skipped</li>
-  <li class="muted">Draft — skipped</li>
-</ol>
-<p><a class="btn" href="{% url 'contracts:upload' %}">Upload another contract</a></p>
+
+<p class="security-halt-actions">
+  <a class="btn" href="{% url 'contracts:upload' %}">Upload another</a>
+  {% if can_override %}
+    <form method="post" action="{% url 'security:override' pk=contract.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-ghost">Override &amp; continue anyway</button>
+    </form>
+  {% endif %}
+</p>
+{% if can_override %}
+  <p class="meta" style="margin-top:0.5rem">Continuing is your call - you stay accountable.</p>
+{% endif %}
 {% endblock %}

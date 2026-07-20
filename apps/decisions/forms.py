@@ -13,7 +13,8 @@ class DecisionForm(forms.Form):
         help_text=(
             "Accept/Edit learn for next similar drafts. "
             "Override & accept as-is suppresses this playbook rule going forward "
-            "(writes playbook_overrides.json — not the golden playbook)."
+            "(writes playbook_overrides.json - not the golden playbook). "
+            "Report false positive marks a bad flag without teaching Memory."
         ),
     )
     final_text = forms.CharField(

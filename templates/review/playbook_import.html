@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Import playbook — RedlineGuard{% endblock %}
+{% block title %}Import playbook - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
   <h1>Import a playbook PDF</h1>
-  <p>Proposed from your PDF — review before activating. You never need to write JSON.</p>
-  <p><a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a></p>
+  <p>Proposed from your PDF - review before activating. You never need to write JSON.</p>
+  <p><a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a>
+     · <a href="{% url 'review:playbook_starter' %}">Starter from past contracts</a></p>
 </section>
 
 <form method="post" enctype="multipart/form-data" class="card-form rise-in" style="max-width:28rem">

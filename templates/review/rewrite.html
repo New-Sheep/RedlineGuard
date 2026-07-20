@@ -1,63 +1,71 @@
 {% extends "base.html" %}
-{% block title %}Rewrite — RedlineGuard{% endblock %}
+{% block title %}Decide - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
-  <h1>Rewrite</h1>
+  <h1>{{ finding.clause_name }}</h1>
   <p class="meta">
-    {{ finding.clause_name }} · rule <code>{{ finding.playbook_rule_id }}</code>
-    · <span class="risk-badge {{ finding.severity }}">{{ finding.severity|title }}</span>
+    <span class="risk-badge {{ finding.severity }}">{{ finding.severity|title }}</span>
+    {% if finding.plain_english %} · {{ finding.plain_english }}{% endif %}
   </p>
 </section>
 
+{% if reject_warn %}
+  <div class="alert warn rise-in">{{ reject_warn }}</div>
+{% endif %}
+
 <div class="rewrite-grid rise-in">
   <section class="rewrite-card">
-    <h2>Why</h2>
-    <p class="rule">Cites playbook rule <code>{{ finding.playbook_rule_id }}</code></p>
-    <p>{{ finding.deviation_reason }}</p>
-    <p class="meta">Status: {{ finding.status }}</p>
-  </section>
-
-  <section class="rewrite-card">
-    <h2>Original / matched</h2>
-    <p class="meta">Language that triggered the rule</p>
+    <h2>In the contract</h2>
     {% if finding.clause_excerpt %}
       <pre class="doc-text compact">{{ finding.clause_excerpt }}</pre>
     {% else %}
-      <pre class="doc-text compact">{{ finding.clause_name }} — see document on Review.</pre>
+      <p class="meta">{{ finding.clause_name }}</p>
     {% endif %}
   </section>
 
   <section class="rewrite-card suggested">
-    <h2>Suggested</h2>
+    <h2>Suggested rewrite</h2>
     {% if draft and draft.draft_text %}
-      <p class="meta">Source: {{ draft.get_draft_source_display }}</p>
-      {% if draft.draft_source == "memory_precedent" and draft.provenance %}
-        <aside class="provenance">
-          <p>
-            Reused {{ draft.provenance.decision|default:"Accept" }} from
-            <strong>{{ draft.provenance.filename|default:"prior contract" }}</strong>
-            ({% firstof draft.provenance.date "n/a" }})
-            {% if draft.provenance.similarity != None %}
-              · similarity {{ draft.provenance.similarity }}
-            {% elif draft.provenance.distance != None %}
-              · distance {{ draft.provenance.distance }}
-            {% endif %}
-          </p>
-          {% if draft.provenance.clause_quote %}
-            <blockquote class="clause-quote">{{ draft.provenance.clause_quote }}</blockquote>
-          {% endif %}
-        </aside>
-      {% endif %}
-      <pre class="doc-text">{{ draft.draft_text }}</pre>
-      <p class="meta">{{ draft.rationale }}</p>
+      <pre class="doc-text" id="suggested-preview">{{ draft.draft_text }}</pre>
+      {% if draft.rationale %}<p class="meta">{{ draft.rationale }}</p>{% endif %}
     {% elif finding.suggested_counter %}
-      <p class="meta">Playbook fallback</p>
-      <pre class="doc-text">{{ finding.suggested_counter }}</pre>
+      <pre class="doc-text" id="suggested-preview">{{ finding.suggested_counter }}</pre>
     {% else %}
-      <p class="meta">Needs human — no fallback draft in the playbook and no memory precedent.</p>
+      <p class="meta">No automatic rewrite - edit below or mark as a false positive.</p>
     {% endif %}
+    <details style="margin-top:0.5rem">
+      <summary class="meta">Technical detail</summary>
+      <p class="meta">Playbook rule {{ finding.playbook_rule_id }}
+        · {{ finding.deviation_reason }}
+        {% if finding.sources %} · matched via {{ finding.sources|join:", " }}{% endif %}
+      </p>
+      {% if react_trace %}
+      <p class="meta"><strong>Draft agent steps</strong></p>
+      <ol class="meta">
+        {% for step in react_trace %}
+        <li>{{ step.tool }}</li>
+        {% endfor %}
+      </ol>
+      {% endif %}
+    </details>
   </section>
 </div>
+
+{% if copilot and copilot.options and draft and draft.draft_source != "playbook_fallback" %}
+{{ copilot|json_script:"rg-copilot-data" }}
+<section class="copilot-options rise-in">
+  <h2>Tone options</h2>
+  <p class="meta">Pick one to fill the editor.</p>
+  <div class="option-cards" id="option-cards">
+    {% for opt in copilot.options %}
+      <button type="button" class="option-card" data-idx="{{ forloop.counter0 }}">
+        <span class="badge">{{ opt.tone }}</span>
+        <p>{{ opt.text|truncatechars:160 }}</p>
+      </button>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 
 <form method="post" class="card-form rise-in" id="decision-form">
   {% csrf_token %}
@@ -66,15 +74,15 @@
   {% endif %}
   <div class="field">
     <label>{{ form.action.label }}</label>
-    <p class="help">{{ form.action.help_text }}</p>
+    <p class="help">Accept teaches Memory for next time. Override mutes this rule (does not rewrite the playbook).</p>
     <div class="decision-tiles" role="group" aria-label="Decision">
       <button type="button" class="decision-tile accept" data-value="accept">
         <span class="tile-title">Accept</span>
-        <span class="tile-hint">Learn this counter</span>
+        <span class="tile-hint">Use this rewrite</span>
       </button>
       <button type="button" class="decision-tile edit" data-value="edit">
         <span class="tile-title">Edit</span>
-        <span class="tile-hint">Save your wording</span>
+        <span class="tile-hint">Save my wording</span>
       </button>
       <button type="button" class="decision-tile reject" data-value="reject">
         <span class="tile-title">Reject</span>
@@ -82,25 +90,26 @@
       </button>
       <button type="button" class="decision-tile override" data-value="override">
         <span class="tile-title">Override</span>
-        <span class="tile-hint">Accept as-is</span>
+        <span class="tile-hint">Keep original</span>
+      </button>
+      <button type="button" class="decision-tile reject" data-value="false_positive">
+        <span class="tile-title">False positive</span>
+        <span class="tile-hint">Bad flag</span>
       </button>
     </div>
-    <div class="decision-radios" hidden>
-      {{ form.action }}
-    </div>
-    {% if form.action.errors %}<div class="form-errors">{{ form.action.errors }}</div>{% endif %}
+    <div class="decision-radios" hidden>{{ form.action }}</div>
   </div>
   <div class="field">
-    <label for="{{ form.final_text.id_for_label }}">{{ form.final_text.label }}</label>
+    <label for="{{ form.final_text.id_for_label }}">Your rewrite</label>
     {{ form.final_text }}
   </div>
   <div class="field">
-    <label for="{{ form.reasoning.id_for_label }}">{{ form.reasoning.label }}</label>
+    <label for="{{ form.reasoning.id_for_label }}">Notes (optional)</label>
     {{ form.reasoning }}
   </div>
-  <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+  <div class="form-actions" style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
     <button type="submit" class="btn">Save decision</button>
-    <a class="btn btn-ghost" href="{% url 'contracts:review' pk=contract.pk %}">Back to review</a>
+    <a class="btn btn-ghost" href="{% url 'contracts:review' pk=contract.pk %}">Back</a>
   </div>
 </form>
 {% endblock %}
@@ -111,24 +120,36 @@
   if (!form) return;
   var tiles = form.querySelectorAll(".decision-tile");
   var radios = form.querySelectorAll('input[name="action"]');
+  var finalEl = form.querySelector('[name="final_text"]');
+  var preview = document.getElementById("suggested-preview");
 
   function select(value) {
     tiles.forEach(function (t) {
       t.classList.toggle("selected", t.getAttribute("data-value") === value);
     });
-    radios.forEach(function (r) {
-      r.checked = r.value === value;
-    });
+    radios.forEach(function (r) { r.checked = r.value === value; });
   }
-
   tiles.forEach(function (t) {
-    t.addEventListener("click", function () {
-      select(t.getAttribute("data-value"));
-    });
+    t.addEventListener("click", function () { select(t.getAttribute("data-value")); });
   });
-
   var checked = form.querySelector('input[name="action"]:checked');
   select(checked ? checked.value : "accept");
+
+  document.querySelectorAll(".option-card").forEach(function (card) {
+    card.addEventListener("click", function () {
+      var dataEl = document.getElementById("rg-copilot-data");
+      var opts = [];
+      try { opts = JSON.parse(dataEl.textContent).options || []; } catch (e) {}
+      var idx = parseInt(card.getAttribute("data-idx") || "0", 10);
+      var text = (opts[idx] && opts[idx].text) || "";
+      if (finalEl) finalEl.value = text;
+      if (preview) preview.textContent = text;
+      document.querySelectorAll(".option-card").forEach(function (c) {
+        c.classList.toggle("selected", c === card);
+      });
+      select("edit");
+    });
+  });
 })();
 </script>
 {% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Missed clause - RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Proposed rule from missed clause</h1>
+  <p class="meta">{{ missed.contract.filename }} · {{ missed.get_status_display }}</p>
+  <p class="meta">AI proposes - you Activate. Never a silent playbook write.</p>
+</section>
+
+<aside class="coverage-gaps rise-in">
+  <h2 class="meta">Excerpt</h2>
+  <pre class="doc-text compact">{{ missed.excerpt }}</pre>
+  {% if missed.note %}<p class="meta">Note: {{ missed.note }}</p>{% endif %}
+</aside>
+
+<article class="card-form rise-in">
+  <h2><code>{{ rule.id }}</code> · {{ rule.clause_type }}</h2>
+  <p><strong>Preferred:</strong> {{ rule.preferred }}</p>
+  <p><strong>Hard ceiling:</strong> {{ rule.hard_ceiling }}</p>
+  <p><strong>Needles:</strong> {{ rule.match_any|join:", " }}</p>
+  <p class="meta">Severity: {{ rule.severity }}</p>
+</article>
+
+{% if audit %}
+  <aside class="coverage-gaps rise-in">
+    <p class="meta">Auditor:
+      {% if audit.ok %}<span class="ok">OK to Activate</span>{% else %}<strong>Errors</strong>{% endif %}
+    </p>
+    {% for e in audit.errors %}<p class="meta">{{ e }}</p>{% endfor %}
+    {% for w in audit.warnings %}<p class="meta">{{ w }}</p>{% endfor %}
+  </aside>
+{% endif %}
+
+{% if missed.status == "proposed" %}
+<form method="post" style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:1rem">
+  {% csrf_token %}
+  <button type="submit" name="action" value="activate" class="btn" {% if audit and not audit.ok %}disabled{% endif %}>
+    Activate into playbook
+  </button>
+  <button type="submit" name="action" value="dismiss" class="btn btn-ghost">Dismiss</button>
+  <a class="btn btn-ghost" href="{% url 'contracts:review' pk=missed.contract_id %}">Back to review</a>
+</form>
+{% else %}
+  <p><a class="btn" href="{% url 'review:playbook_active' %}">Open playbook</a></p>
+{% endif %}
+{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Importing playbook — RedlineGuard{% endblock %}
+{% block title %}Importing playbook - RedlineGuard{% endblock %}
 {% block container_class %} narrow{% endblock %}
 {% block content %}
 <div class="processing-layout rise-in">
@@ -52,7 +52,7 @@
       <div class="progress-bar-fill" id="progress-fill"></div>
     </div>
     <p id="processing-tip" class="processing-tips fade-swap"></p>
-    <p class="meta">Large PDFs can take a minute — this page updates automatically.</p>
+    <p class="meta">Large PDFs can take a minute - this page updates automatically.</p>
   {% endif %}
 </div>
 
@@ -67,10 +67,11 @@
   const tipEl = document.getElementById("processing-tip");
   const items = document.querySelectorAll("#progress-steps [data-step]");
   const tips = [
-    "We extract text from your PDF, then fence for injection before proposing rules.",
-    "Proposed rules are editable — nothing goes live until you Activate.",
-    "Activate backs up the previous golden playbook as playbook_config.json.bak.",
-    "Memory (Accept/Edit) never rewrites the golden playbook — only Activate does."
+    "Steps: Queued → Reading PDF → Security check → Propose rules → Review & Activate.",
+    "Large playbook PDFs spend most time in Reading + Propose (especially if FAKE_LLM=0).",
+    "With FAKE_LLM=1, propose is local needle matching and usually finishes in seconds.",
+    "Proposed rules are editable - nothing goes live until you Activate.",
+    "Memory (Accept/Edit) never rewrites the golden playbook - only Activate does."
   ];
   let tipIdx = 0;
   if (tipEl) {

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Help - RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>How to use RedlineGuard</h1>
+  <p class="meta">A short path for in-house counsel. Not legal advice.</p>
+</section>
+
+<article class="clean-pass-panel rise-in">
+  <h2>Three things that matter</h2>
+  <ul>
+    <li><strong>Playbook</strong> - your firm rules. Only changes when you Activate.</li>
+    <li><strong>Memory</strong> - past Accept/Edit decisions that help draft the next similar rewrite.</li>
+    <li><strong>Override</strong> - mute one rule for now. Does not rewrite the playbook.</li>
+  </ul>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>Typical day</h2>
+  <ol class="next-steps">
+    <li><a href="{% url 'contracts:upload' %}">Upload</a> a contract (or a demo sample).</li>
+    <li>Open Review - work each issue with Accept / Edit / Reject.</li>
+    <li>Check <a href="{% url 'learning:memory' %}">Memory</a> and <a href="{% url 'decisions:history' %}">History</a>.</li>
+  </ol>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>No playbook yet?</h2>
+  <p><a href="{% url 'review:playbook_import' %}">Import</a> a PDF or <a href="{% url 'review:playbook_starter' %}">draft a starter</a>, review the proposed rules, then Activate.</p>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>Security halt</h2>
+  <p>If a file looks like prompt injection, review stops. You can override and continue - you stay accountable.</p>
+</article>
+
+<article class="agent-assist-panel rise-in">
+  <h2>Start onboarding again</h2>
+  <p><a href="{% url 'accounts:onboarding' %}?force=1">Open the wizard</a>
+     · <a href="{% url 'core:trust' %}">Trust &amp; explainability</a></p>
+</article>
+{% endblock %}

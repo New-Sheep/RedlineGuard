@@ -6,6 +6,7 @@ app_name = "contracts"
 
 urlpatterns = [
     path("", views.UploadView.as_view(), name="upload"),
+    path("contracts/", views.ContractListView.as_view(), name="list"),
     path("contracts/<uuid:pk>/", views.ContractDetailView.as_view(), name="detail"),
     path(
         "contracts/<uuid:pk>/processing/",

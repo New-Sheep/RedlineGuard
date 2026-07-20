@@ -1,11 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Review proposed rules — RedlineGuard{% endblock %}
+{% block title %}Review proposed rules - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero">
   <h1>Review proposed rules</h1>
+  {% if is_proposed_not_active %}
+    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">Proposed - not active yet</p>
+  {% endif %}
+  {% if import_obj.proposal_source %}
+    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">
+      Proposed by {{ import_obj.proposal_source|upper }}
+      {% if import_obj.proposal_model %}· {{ import_obj.proposal_model }}{% endif %}
+    </p>
+  {% endif %}
   <p>From <strong>{{ import_obj.filename }}</strong>. Edit in plain language, then activate. Not legal advice.</p>
+  {% if is_starter %}
+    <p class="meta">Origin: starter from past contracts (AI-proposed - not company policy until Activate).</p>
+  {% endif %}
   <p class="meta">Status: {{ import_obj.get_status_display }}</p>
-  <p><a href="{% url 'review:playbook_import' %}">&larr; Import another</a></p>
+  {% if audit %}
+    <aside class="coverage-gaps" style="margin:0.75rem 0">
+      <h2 class="meta" style="margin:0 0 0.35rem">Playbook auditor</h2>
+      <p class="meta">{{ audit.rule_count }} rules ·
+        {% if audit.ok %}<span class="ok">Ready to Activate</span>{% else %}<strong>Fix errors before Activate</strong>{% endif %}
+      </p>
+      {% if audit.errors %}
+        <ul class="meta">{% for e in audit.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+      {% endif %}
+      {% if audit.warnings %}
+        <ul class="meta">{% for w in audit.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+      {% endif %}
+    </aside>
+  {% endif %}
+  <p>
+    <a href="{% url 'review:playbook_import' %}">&larr; Import another PDF</a>
+    ·
+    <a href="{% url 'review:playbook_starter' %}">Starter from past contracts</a>
+  </p>
 </section>
 
 {% if import_obj.status == "failed" %}
@@ -32,7 +62,7 @@
 
   {% for row in rule_rows %}
     <fieldset class="card-form rule-card">
-      <legend>Rule {{ forloop.counter }}</legend>
+      <legend>Rule {{ forloop.counter }} <span class="badge muted">Proposed</span></legend>
       <div class="field"><label>Id</label>{{ row.id }}{{ row.id.errors }}</div>
       <div class="field"><label>Clause type</label>{{ row.clause_type }}{{ row.clause_type.errors }}</div>
       <div class="field"><label>Preferred position</label>{{ row.preferred }}{{ row.preferred.errors }}</div>
@@ -52,6 +82,7 @@
       <label>{{ form.confirm }} {{ form.confirm.label }}</label>
       {{ form.confirm.errors }}
     </div>
+    <p class="help">Activate backs up the previous golden file as <code>playbook_config.json.bak</code>.</p>
     <button type="submit" class="btn">Activate playbook</button>
   </div>
 </form>

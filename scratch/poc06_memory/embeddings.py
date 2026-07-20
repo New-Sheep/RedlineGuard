@@ -52,9 +52,26 @@ class SentenceEmbedder:
         return [v.tolist() for v in vectors]
 
 
+_embedder_singleton: Embedder | None = None
+
+
 def get_embedder() -> Embedder:
-    """FAKE_EMBED=0 (default) -> SentenceEmbedder (MiniLM); 1 -> HashEmbedder."""
+    """FAKE_EMBED=0 (default) -> SentenceEmbedder (MiniLM); 1 -> HashEmbedder.
+
+    MiniLM is loaded once per process (warmup + analyze share the same instance).
+    """
+    global _embedder_singleton
+    if _embedder_singleton is not None:
+        return _embedder_singleton
     fake = os.environ.get("FAKE_EMBED", "0").strip() not in ("0", "false", "False")
     if fake:
-        return HashEmbedder()
-    return SentenceEmbedder()
+        _embedder_singleton = HashEmbedder()
+    else:
+        _embedder_singleton = SentenceEmbedder()
+    return _embedder_singleton
+
+
+def reset_embedder_for_tests() -> None:
+    """Clear singleton (tests that flip FAKE_EMBED)."""
+    global _embedder_singleton
+    _embedder_singleton = None

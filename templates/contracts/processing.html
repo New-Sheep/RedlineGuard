@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Processing — RedlineGuard{% endblock %}
+{% block title %}Processing - RedlineGuard{% endblock %}
 {% block container_class %} narrow{% endblock %}
 {% block content %}
 <div class="processing-layout rise-in">
@@ -78,11 +78,12 @@
   const tipEl = document.getElementById("processing-tip");
   const items = document.querySelectorAll("#progress-steps [data-step]");
   const tips = [
-    "Auto-renewal clauses often require 60–90 days' notice to cancel — easy to miss.",
-    "An uncapped indemnity can cost far more than the entire contract is worth.",
-    "Watch one-sided governing law — your preferred venue may be missing.",
-    "Memory reuses past Accepts only when the clause is similar enough.",
-    "Override suppresses a rule without changing the golden playbook."
+    "Closed-book: the model only judges against your activated playbook.",
+    "Accept once - Memory drafts the next similar clause automatically.",
+    "Reject teaches Avoid; Override suppresses a rule without rewriting golden policy.",
+    "Uncapped indemnity can cost more than the entire contract is worth.",
+    "Watch one-sided governing law - your preferred venue may be missing.",
+    "LLM judge confirms or drops semantic false positives before you see them."
   ];
   let tipIdx = 0;
   if (tipEl) {

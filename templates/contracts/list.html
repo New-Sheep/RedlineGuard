@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Contracts - RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Contracts</h1>
+  <p class="meta">Your review queue.</p>
+  <p style="margin-top:0.75rem">
+    <a class="btn" href="{% url 'contracts:upload' %}">Upload new</a>
+  </p>
+</section>
+
+<form method="get" class="filters rise-in" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 1rem;align-items:end">
+  <label class="meta">Status
+    <select name="status">
+      <option value="">All</option>
+      {% for val, label in status_choices %}
+        <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="btn btn-sm">Filter</button>
+</form>
+
+{% if page_obj.object_list %}
+  <table class="history-table rise-in">
+    <thead>
+      <tr>
+        <th>When</th>
+        <th>File</th>
+        <th>Status</th>
+        <th>Score</th>
+        <th>Flags</th>
+        <th>Playbook</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in page_obj %}
+        <tr>
+          <td>{{ row.contract.created_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ row.contract.filename|truncatechars:40 }}</td>
+          <td><span class="badge">{{ row.contract.get_status_display }}</span></td>
+          <td class="tabular">{% if row.score != None %}{{ row.score }}{% else %}-{% endif %}</td>
+          <td class="tabular">{{ row.flag_count }}</td>
+          <td class="meta">{{ row.playbook_name|default:"-"|truncatechars:24 }}</td>
+          <td>
+            <a href="{% url 'contracts:detail' pk=row.contract.pk %}">Open</a>
+            <form method="post" action="{% url 'accounts:contract_delete' pk=row.contract.pk %}" style="display:inline" onsubmit="return confirm('Delete this contract?');">
+              {% csrf_token %}
+              <button type="submit" class="btn-text">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% include "partials/pagination.html" with page_obj=page_obj %}
+{% else %}
+  <p class="meta">No contracts yet. <a href="{% url 'accounts:onboarding' %}?force=1">Start onboarding</a>
+     or <a href="{% url 'contracts:upload' %}">upload one</a>.</p>
+{% endif %}
+{% endblock %}

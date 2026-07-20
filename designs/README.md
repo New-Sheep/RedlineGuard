@@ -2,6 +2,8 @@
 
 Visual previews from Google Stitch. **Mockups to imagine the product**, not production code.
 
+To **run** the app: root [`README.md`](../README.md) · [`docs/13-HANDOFF.md`](../docs/13-HANDOFF.md).
+
 Windows downloaded four copies of the same zip name; they are **four different screens**:
 
 | Folder | Screen (MVP) | What you see |

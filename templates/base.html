@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
   <title>{% block title %}RedlineGuard{% endblock %}</title>
   <script>
     (function () {
@@ -35,13 +36,26 @@
     </a>
     <div class="topbar-right">
       <nav class="nav" aria-label="Primary">
-        <a href="{% url 'contracts:upload' %}">Contracts</a>
+        <a href="{% url 'contracts:list' %}">Contracts</a>
+        <a href="{% url 'contracts:upload' %}">Upload</a>
         <a href="{% url 'decisions:history' %}">History</a>
+        <a href="{% url 'decisions:audit' %}">Audit</a>
         <a href="{% url 'learning:memory' %}">Memory</a>
+        <a href="{% url 'core:help' %}">Help</a>
+        <a href="{% url 'core:trust' %}">Trust</a>
         <span class="nav-group" aria-label="Setup">
           <a href="{% url 'review:playbook_active' %}">Playbook</a>
           <a href="{% url 'review:playbook_import' %}">Import</a>
         </span>
+        {% if user.is_authenticated %}
+          {% if user.is_staff %}<a href="{% url 'accounts:lab_reset' %}">Lab</a>{% endif %}
+          <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout">
+            {% csrf_token %}
+            <button type="submit" class="btn-text" title="Signed in as {{ user.username }}">Sign out</button>
+          </form>
+        {% else %}
+          <a href="{% url 'accounts:login' %}">Sign in</a>
+        {% endif %}
       </nav>
       <span class="disclaimer-chip" title="First-pass assistant only">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -63,9 +77,10 @@
     {% block content %}{% endblock %}
   </main>
   <footer class="site-footer">
-    <p>Not legal advice. First-pass assistant only — a human remains accountable.</p>
+    <p>Not legal advice. First-pass assistant only - a human remains accountable.</p>
   </footer>
   <script src="/static/js/theme.js"></script>
+  <script src="/static/js/csrf.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Reset lab data - RedlineGuard{% endblock %}
+{% block container_class %} narrow{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Reset lab data</h1>
+  <p class="meta">Admin only. Type <strong>RESET</strong> to confirm. The audit log keeps a record of resets.</p>
+</section>
+
+<article class="clean-pass-panel rise-in">
+  <p>{{ decision_count }} decisions · {{ contract_count }} contracts</p>
+</article>
+
+<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+  {% csrf_token %}
+  <input type="hidden" name="target" value="decisions">
+  <h2>Reset decisions</h2>
+  <p class="meta">Clears saved Accept/Edit/Reject history and Memory. Playbook rules stay.</p>
+  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
+  <button type="submit" class="btn danger">Reset decisions</button>
+</form>
+
+<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+  {% csrf_token %}
+  <input type="hidden" name="target" value="contracts">
+  <h2>Reset contracts</h2>
+  <p class="meta">Deletes every uploaded contract and its review.</p>
+  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
+  <button type="submit" class="btn danger">Reset contracts</button>
+</form>
+
+<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+  {% csrf_token %}
+  <input type="hidden" name="target" value="overrides">
+  <h2>Reset overrides</h2>
+  <p class="meta">Clears muted rules. Playbook itself is unchanged.</p>
+  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
+  <button type="submit" class="btn danger">Reset overrides</button>
+</form>
+
+<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+  {% csrf_token %}
+  <input type="hidden" name="target" value="onboarding">
+  <h2>Reset onboarding</h2>
+  <p class="meta">Show the first-time wizard again on next login.</p>
+  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
+  <button type="submit" class="btn danger">Reset onboarding</button>
+</form>
+{% endblock %}

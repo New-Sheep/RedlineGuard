@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Gap suggestions - RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Suggested playbook gaps</h1>
+  <p class="meta">From your Reject/Edit history - proposed only. Activate via Import/edit flow; never auto-writes golden.</p>
+  <p><a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a></p>
+</section>
+{% if suggestion.rationale %}
+  <p class="rise-in">{{ suggestion.rationale }}</p>
+{% endif %}
+{% if rules %}
+  <ul class="finding-list rise-in">
+    {% for r in rules %}
+      <li class="finding">
+        <strong>{{ r.clause_type }}</strong> · <code>{{ r.id }}</code>
+        <p>Preferred: {{ r.preferred }}</p>
+        <p class="meta">Ceiling: {{ r.hard_ceiling }}</p>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p class="meta">No suggestions yet. Set <code>LLM_GAP_SUGGEST=1</code> with <code>FAKE_LLM=0</code>, or accumulate Rejects first.</p>
+{% endif %}
+{% endblock %}

@@ -22,7 +22,7 @@ class DemoSampleTests(TestCase):
     def test_demo_labels_prefer_curated_files(self):
         choices = ordered_sample_choices()
         labels = [label for _, label in choices if _]
-        self.assertTrue(any(label.startswith("Demo —") for label in labels))
+        self.assertTrue(any(label.startswith("Demo -") for label in labels))
         for filename in DEMO_SAMPLE_LABELS:
             path = Path(settings.SCRATCH_CORPUS_DIR) / filename
             self.assertTrue(path.is_file(), f"missing {filename}")
@@ -184,4 +184,4 @@ class UploadFormPageTests(TestCase):
     def test_upload_shows_demo_hint(self):
         r = Client().get("/")
         self.assertEqual(r.status_code, 200)
-        self.assertContains(r, "Demo —")
+        self.assertContains(r, "Demo -")

@@ -1,10 +1,13 @@
-"""POC 04 — playbook load + heuristic compare (FAKE / no LLM)."""
+"""POC 04 — playbook load + heuristic compare (FAKE / no LLM).
+
+L0 regex lives in apps.review.services.compare.layer_rule; this module keeps
+the scratch CLI + ContractReviewReport shape and scores with BASE=0.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Literal, Optional
@@ -27,6 +30,12 @@ from scratch._io import (  # noqa: E402
     write_text,
 )
 from scratch.poc01_extract.extract import extract_pdf  # noqa: E402
+from apps.review.services.compare.layer_rule import (  # noqa: E402
+    first_match_span,
+    layer_rule,
+)
+from apps.review.services.compare.merge import merge_candidates  # noqa: E402
+from apps.review.services.compare.score import score_findings  # noqa: E402
 
 Status = Literal["APPROVED", "FLAGGED", "REQUIRES_HUMAN"]
 
@@ -53,66 +62,30 @@ def load_playbook(path: Path | None = None) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _first_match_span(text: str, rule: dict) -> tuple[int, int, str]:
-    """Return (start, end, excerpt) for first match_any hit; empty if none."""
-    for pat in rule.get("match_any") or []:
-        try:
-            m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
-        except re.error:
-            idx = text.lower().find(str(pat).lower())
-            if idx < 0:
-                continue
-            start = max(0, idx - 120)
-            end = min(len(text), idx + len(pat) + 120)
-            return start, end, text[start:end].strip()
-        if m:
-            start = max(0, m.start() - 120)
-            end = min(len(text), m.end() + 120)
-            return start, end, text[start:end].strip()
-    return 0, 0, ""
+# Back-compat alias used by older scratch helpers
+_first_match_span = first_match_span
 
 
 def compare(text: str, playbook: dict | None = None) -> ContractReviewReport:
+    """L0-only compare for scratch CLI (semantic lives in compare_layered)."""
     playbook = playbook or load_playbook()
-    findings: list[Finding] = []
-    for rule in playbook.get("rules") or []:
-        start, end, excerpt = _first_match_span(text, rule)
-        if not excerpt:
-            continue
-        fallback = rule.get("fallback_text")
-        if fallback:
-            status: Status = "FLAGGED"
-            suggestion = fallback
-            reason = (
-                f"Playbook rule `{rule['id']}` triggered. "
-                f"Preferred: {rule.get('preferred')}. Using playbook fallback counter."
-            )
-        else:
-            status = "REQUIRES_HUMAN"
-            suggestion = None
-            reason = (
-                f"Playbook rule `{rule['id']}` triggered "
-                f"({rule.get('hard_ceiling')}) but no fallback draft - needs human."
-            )
-        findings.append(
-            Finding(
-                clause_name=rule.get("clause_type") or rule["id"],
-                status=status,
-                playbook_rule_id=rule["id"],
-                deviation_reason=reason,
-                suggested_counter_proposal=suggestion,
-                severity=rule.get("severity") or "medium",
-                clause_excerpt=excerpt[:2000],
-                start_offset=start,
-                end_offset=end,
-            )
+    rule_hits = layer_rule(text, playbook)
+    layered = merge_candidates(rule_hits, [])
+    score, _breakdown = score_findings(layered)
+    findings = [
+        Finding(
+            clause_name=f.clause_name,
+            status=f.status,
+            playbook_rule_id=f.playbook_rule_id,
+            deviation_reason=f.deviation_reason,
+            suggested_counter_proposal=f.suggested_counter_proposal,
+            severity=f.severity,
+            clause_excerpt=f.clause_excerpt,
+            start_offset=f.start_offset,
+            end_offset=f.end_offset,
         )
-
-    score = 10
-    for f in findings:
-        score += 25 if f.severity == "high" else 15 if f.severity == "medium" else 5
-    score = min(100, score)
-
+        for f in layered
+    ]
     return ContractReviewReport(overall_risk_score=score, reviews=findings)
 
 

@@ -201,7 +201,7 @@ class FakePlaybookBootstrap:
                 PlaybookRule(
                     id=_slug("review_required"),
                     clause_type="process",
-                    preferred="Manual playbook review required — few cues detected in PDF",
+                    preferred="Manual playbook review required - few cues detected in PDF",
                     hard_ceiling="Do not auto-approve until rules are curated",
                     fallback_text=None,
                     severity="medium",
@@ -218,5 +218,7 @@ class FakePlaybookBootstrap:
 
 
 def get_bootstrap() -> PlaybookBootstrap:
-    """FAKE_LLM path for now; swap for LlmPlaybookBootstrap later."""
-    return FakePlaybookBootstrap()
+    """Fake when FAKE_LLM=1; else LlmPlaybookBootstrap (NVIDIA/Ollama)."""
+    from apps.review.services.playbook_bootstrap_llm import get_bootstrap as _get
+
+    return _get()
