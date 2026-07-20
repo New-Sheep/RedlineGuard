@@ -16,40 +16,41 @@ STEPS = [
         "id": 1,
         "title": "Welcome to RedlineGuard",
         "blurb": (
-            "AI proposes risks against your playbook. You confirm every Accept, Reject, "
-            "and Override. This is a first-pass tool - not legal advice."
+            "We flag risks against your company playbook. You confirm every Accept, Reject, "
+            "and Override. This is a first-pass assistant, not legal advice."
         ),
     },
     {
         "id": 2,
         "title": "Playbook · Memory · Override",
         "blurb": (
-            "Playbook = firm rules (activate/import). Memory = your Accept precedents for "
-            "retrieval. Override = temporary mute of a rule. Accept never mutates the golden playbook."
+            "Playbook = your firm’s written rules (only live after you Activate). "
+            "Memory = past Accept / Edit examples we reuse on the next similar clause. "
+            "Override = mute one rule for now. Accept never changes the official playbook."
         ),
     },
     {
         "id": 3,
         "title": "Activate a playbook",
         "blurb": (
-            "Import Sample Playbook4 (or your YAML) and Activate. Without an active playbook, "
-            "review runs in no-playbook scout mode."
+            "Import a sample playbook PDF (or your own) and Activate. Without an active playbook, "
+            "reviews run in a limited mode with no company rules to check against."
         ),
     },
     {
         "id": 4,
         "title": "Upload a demo contract",
         "blurb": (
-            "Upload Demo clean NDA or a risky sample from the Contracts queue. Open Review - "
-            "flags appear with rule ids, evidence, and plain-English why."
+            "Upload a demo sample from the Upload page. Open Review. Issues appear with "
+            "the rule they cite, a short why, and evidence in the document."
         ),
     },
     {
         "id": 5,
-        "title": "Optional: seed Memory",
+        "title": "Optional: save a few examples",
         "blurb": (
-            "Accept a few flags on a known-good contract so Decision Memory has precedents. "
-            "Or skip - you can Unlearn later."
+            "Accept a few flags on a known-good contract so Memory has examples for next time. "
+            "Or skip. You can always stop reusing an example later."
         ),
     },
 ]
@@ -90,7 +91,7 @@ class OnboardingView(LoginRequiredMixin, View):
             profile.onboarding_complete = True
             profile.onboarding_step = len(STEPS)
             profile.save(update_fields=["onboarding_complete", "onboarding_step"])
-            messages.success(request, "Onboarding complete - open the Contracts queue.")
+            messages.success(request, "Setup complete. Open your contracts list.")
             return redirect("contracts:list")
         if action == "next":
             nxt = min(step + 1, len(STEPS))

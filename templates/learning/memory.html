@@ -3,86 +3,95 @@
 {% block content %}
 <section class="hero rise-in">
   <h1>Memory</h1>
-  <p class="meta">Past decisions we reuse when drafting the next similar rewrite.</p>
+  <p>Past Accept / Edit decisions we reuse when drafting the next similar rewrite.</p>
+  <p class="meta">
+    On a new contract, if a flagged clause looks like one you already decided,
+    the suggested counter can start from your past wording, not a blank slate.
+    <span class="hint" title="Rejects become Avoid signals so we do not reuse that wording. Override mutes a rule without changing the official playbook.">How it helps</span>
+  </p>
 </section>
 
 {% if precedents %}
-  <table class="history-table rise-in">
-    <thead>
-      <tr>
-        <th>When</th>
-        <th>Rule</th>
-        <th>Decision</th>
-        <th>Clause</th>
-        <th>Final / note</th>
-        <th>Contract</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for p in precedents %}
-        <tr>
-          <td>{{ p.date }}</td>
-          <td><code>{{ p.rule_id }}</code></td>
-          <td>
-            {% if p.decision == "reject" %}
-              <span class="badge avoid">{{ p.decision_label }}</span>
-            {% else %}
-              <span class="badge action-{{ p.decision }}">{{ p.decision_label }}</span>
-            {% endif %}
-          </td>
-          <td class="clip">{{ p.clause_snippet }}</td>
-          <td class="clip">{% if p.final_text %}{{ p.final_text }}{% else %}-{% endif %}</td>
-          <td>
-            {% if p.contract_id %}
-              <a href="{% url 'contracts:review' pk=p.contract_id %}">{{ p.filename|default:"Open" }}</a>
-            {% else %}
-              {{ p.filename|default:"-" }}
-            {% endif %}
-          </td>
-          <td>
-            <form method="post" action="{% url 'learning:unlearn' precedent_id=p.id %}" class="inline-form">
-              {% csrf_token %}
-              <input type="hidden" name="next" value="{% url 'learning:memory' %}">
-              <button type="submit" class="btn-ghost" title="Don’t use this precedent">Unlearn</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <section class="memory-list" aria-label="Saved examples">
+    {% for p in precedents %}
+      <article class="memory-card rise-in">
+        <header class="memory-card-head">
+          <div>
+            <h2 class="memory-card-title">{{ p.rule_label }}</h2>
+            <p class="meta memory-card-meta">
+              {{ p.date }}
+              {% if p.contract_id %}
+                · <a href="{% url 'contracts:review' pk=p.contract_id %}">{{ p.filename|default:"Open contract" }}</a>
+              {% elif p.filename %}
+                · {{ p.filename }}
+              {% endif %}
+            </p>
+          </div>
+          {% if p.decision == "reject" %}
+            <span class="badge avoid">{{ p.decision_label }}</span>
+          {% else %}
+            <span class="badge action-{{ p.decision }}">{{ p.decision_label }}</span>
+          {% endif %}
+        </header>
+
+        <dl class="memory-card-body">
+          <div class="memory-row">
+            <dt>Their clause</dt>
+            <dd>{{ p.clause_text|default:p.clause_snippet|default:"-" }}</dd>
+          </div>
+          <div class="memory-row">
+            <dt>{% if p.decision == "reject" %}Note{% else %}Your wording{% endif %}</dt>
+            <dd>{% if p.final_full %}{{ p.final_full }}{% elif p.final_text %}{{ p.final_text }}{% else %}<span class="meta">-</span>{% endif %}</dd>
+          </div>
+        </dl>
+
+        <footer class="memory-card-foot">
+          <form method="post" action="{% url 'learning:unlearn' precedent_id=p.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'learning:memory' %}">
+            <button type="submit" class="btn btn-sm btn-ghost" title="Stop using this example for future drafts">Forget this example</button>
+          </form>
+        </footer>
+      </article>
+    {% endfor %}
+  </section>
 {% else %}
-  <p class="meta">No precedents yet. Accept or Edit a rewrite to seed memory; Rejects appear as Avoid.</p>
+  <div class="playbook-summary rise-in">
+    <p><strong>No saved examples yet.</strong></p>
+    <p class="meta">Accept or Edit a rewrite on a review to add one. Rejects appear as “Avoid” so we do not reuse that wording.</p>
+  </div>
 {% endif %}
 
 <section class="card-form rise-in" style="margin-top:2rem">
-  <h2>Active rule overrides</h2>
-  <p class="meta">From <code>playbook_overrides.json</code> - suppressed for compare; not written to the golden playbook.</p>
+  <h2>Muted rules
+    <span class="hint" title="Mute a rule when this variation is OK for now. It does not change your official company playbook.">What is this?</span>
+  </h2>
+  <p class="meta">Rules you muted with “Override &amp; accept as-is”. They stay out of reviews until you turn them back on. The official company playbook is unchanged.</p>
   {% if overrides %}
     <ul class="override-list">
       {% for o in overrides %}
         <li>
-          <code>{{ o.playbook_rule_id }}</code>
+          <strong>{{ o.rule_label|default:o.playbook_rule_id }}</strong>
           - {{ o.reason|default:"accept as-is" }}
           <span class="meta">({{ o.created_at|default:""|slice:":10" }})</span>
           <form method="post" action="{% url 'learning:revoke_override' %}" class="inline-form" style="display:inline">
             {% csrf_token %}
             <input type="hidden" name="rule_id" value="{{ o.playbook_rule_id }}">
             <input type="hidden" name="contract_id" value="{{ o.contract_id|default:'' }}">
-            <button type="submit" class="btn-ghost">Revoke</button>
+            <button type="submit" class="btn-ghost" title="Turn this rule back on for future reviews">Turn back on</button>
           </form>
         </li>
       {% endfor %}
     </ul>
   {% else %}
-    <p class="meta">No active overrides.</p>
+    <p class="meta">No muted rules right now.</p>
   {% endif %}
 </section>
 
 {% if suggest_gaps %}
 <section class="agent-assist-panel rise-in" style="margin-top:1.5rem">
   <h2>Fill playbook gaps from Rejects</h2>
-  <p class="meta">You have enough Reject/Edit decisions to propose new rules - still Activate to go live.</p>
+  <p class="meta">You have enough Reject / Edit decisions to propose new rules. You still review and Activate before anything becomes company policy.</p>
   <p><a class="btn" href="{% url 'review:gap_suggest' %}">Suggest rules from decisions</a></p>
 </section>
 {% endif %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ library_item.name }} - Playbook library{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>{{ library_item.name }}</h1>
+  {% if library_item.is_active %}
+    <p class="badge badge-proposed">Active company playbook</p>
+  {% else %}
+    <p class="badge muted">Saved in library</p>
+  {% endif %}
+  <p class="meta">Preferred governing law: {{ library_item.preferred_governing_law|default:"-" }}
+    · {{ rules|length }} rule{{ rules|length|pluralize }}</p>
+  <p class="meta"><a href="{% url 'review:playbook_active' %}">&larr; Your playbooks</a></p>
+  <div class="hero-actions">
+    <a class="btn" href="{% url 'review:playbook_library_edit' pk=library_item.pk %}">Edit rules</a>
+    {% if library_item.is_active %}
+    <form method="post" action="{% url 'review:playbook_active' %}" onsubmit="return confirm('Deactivate this playbook? Reviews will have no company rules until you Activate another.');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="deactivate">
+      <input type="hidden" name="playbook_id" value="{{ library_item.pk }}">
+      <button type="submit" class="btn btn-ghost">Deactivate</button>
+    </form>
+    {% else %}
+    <form method="post" action="{% url 'review:playbook_active' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="activate">
+      <input type="hidden" name="playbook_id" value="{{ library_item.pk }}">
+      <button type="submit" class="btn">Activate</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'review:playbook_active' %}" onsubmit="return confirm('{% if library_item.is_active %}Delete the active playbook “{{ library_item.name|escapejs }}”? Reviews will have no company rules until you Activate another. This cannot be undone.{% else %}Delete “{{ library_item.name|escapejs }}” from the library? This cannot be undone.{% endif %}');">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="playbook_id" value="{{ library_item.pk }}">
+      <button type="submit" class="btn btn-danger-ghost">Delete</button>
+    </form>
+  </div>
+</section>
+
+<section class="playbook-rules" aria-label="Playbook rules">
+{% for rule in rules %}
+  <article class="playbook-rule sev-{{ rule.severity|default:'medium' }} rise-in">
+    <header class="playbook-rule-head">
+      <h2 class="playbook-rule-title">{{ rule.clause_label }}</h2>
+      <span class="risk-badge {{ rule.severity|default:'medium' }}">{{ rule.severity|default:"medium"|title }}</span>
+    </header>
+    <dl class="playbook-rule-body">
+      <div class="playbook-rule-row want">
+        <dt>Wants</dt>
+        <dd>{{ rule.preferred }}</dd>
+      </div>
+      <div class="playbook-rule-row refuse">
+        <dt>Refuses</dt>
+        <dd>{{ rule.hard_ceiling }}</dd>
+      </div>
+      <div class="playbook-rule-row fallback">
+        <dt>Fallback</dt>
+        <dd>{% if rule.fallback_text %}{{ rule.fallback_text }}{% else %}<span class="meta">None. Deviations need a human.</span>{% endif %}</dd>
+      </div>
+    </dl>
+  </article>
+{% empty %}
+  <div class="playbook-summary">
+    <p>This playbook has no rules.</p>
+  </div>
+{% endfor %}
+</section>
+{% endblock %}

@@ -201,10 +201,11 @@ class Sprint5MemoryUiApiTests(TestCase):
 
                 page = Client().get("/memory/")
                 self.assertEqual(page.status_code, 200)
-                self.assertContains(page, "Institutional memory")
-                self.assertContains(page, "governing_law_preferred")
-                self.assertContains(page, "Active rule overrides")
-                self.assertContains(page, "demo_rule")
+                self.assertContains(page, "Memory")
+                self.assertContains(page, "Governing law preferred")
+                self.assertContains(page, "Muted rules")
+                self.assertContains(page, "Demo rule")
+                self.assertContains(page, "Forget this example")
 
                 listed = Client().get("/api/memory/")
                 self.assertEqual(listed.status_code, 200)

@@ -6,7 +6,18 @@ app_name = "review"
 
 urlpatterns = [
     path("playbook/", views.ActivePlaybookView.as_view(), name="playbook_active"),
+    path(
+        "playbook/library/<uuid:pk>/",
+        views.PlaybookLibraryDetailView.as_view(),
+        name="playbook_library_detail",
+    ),
+    path(
+        "playbook/library/<uuid:pk>/edit/",
+        views.PlaybookLibraryEditView.as_view(),
+        name="playbook_library_edit",
+    ),
     path("playbook/import/", views.PlaybookImportView.as_view(), name="playbook_import"),
+    path("playbook/write/", views.PlaybookBlankView.as_view(), name="playbook_blank"),
     path(
         "playbook/starter/",
         views.PlaybookStarterView.as_view(),

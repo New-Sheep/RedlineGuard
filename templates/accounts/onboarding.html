@@ -10,18 +10,18 @@
 
 {% if step_num == 3 %}
 <article class="clean-pass-panel rise-in">
-  <p>{% if has_playbook %}Active playbook detected.{% else %}No active playbook yet - import Sample Playbook4, then Activate.{% endif %}</p>
+  <p>{% if has_playbook %}You already have an active playbook.{% else %}No active playbook yet. Import a sample PDF, then Activate.{% endif %}</p>
   <p><a class="btn" href="{% url 'review:playbook_import' %}">Import playbook</a>
      <a class="btn" href="{% url 'review:playbook_active' %}">Active playbook</a></p>
 </article>
 {% elif step_num == 4 %}
 <article class="agent-assist-panel rise-in">
   <p><a class="btn primary" href="{% url 'contracts:upload' %}">Upload a contract</a>
-     <a class="btn" href="{% url 'contracts:list' %}">Contracts queue</a></p>
+     <a class="btn" href="{% url 'contracts:list' %}">All contracts</a></p>
 </article>
 {% elif step_num == 5 %}
 <article class="agent-assist-panel rise-in">
-  <p>Optional - Accept flags on Review to seed Memory, or finish now.</p>
+  <p>Optional. Accept a few issues on Review to give Memory examples, or finish now.</p>
   <p><a class="btn" href="{% url 'learning:memory' %}">Open Memory</a></p>
 </article>
 {% endif %}

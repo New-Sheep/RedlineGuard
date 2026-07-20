@@ -1,49 +1,158 @@
 {% extends "base.html" %}
-{% block title %}Reset lab data - RedlineGuard{% endblock %}
+{% block title %}Reset demo data - RedlineGuard{% endblock %}
 {% block container_class %} narrow{% endblock %}
 {% block content %}
 <section class="hero rise-in">
-  <h1>Reset lab data</h1>
-  <p class="meta">Admin only. Type <strong>RESET</strong> to confirm. The audit log keeps a record of resets.</p>
+  <h1>Reset demo data</h1>
+  <p class="meta">Admin only. Type <strong>{{ confirm_word }}</strong> to unlock a reset, then confirm the warning. Sections with nothing left to clear stay greyed out.</p>
 </section>
 
 <article class="clean-pass-panel rise-in">
-  <p>{{ decision_count }} decisions · {{ contract_count }} contracts</p>
+  <p><strong>{{ decision_count }}</strong> decisions · <strong>{{ contract_count }}</strong> contracts · <strong>{{ memory_count }}</strong> saved examples · <strong>{{ override_count }}</strong> muted rules · <strong>{{ onboarding_done_count }}</strong> finished setup</p>
 </article>
 
-<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+<form method="post" class="agent-assist-panel rise-in lab-reset-form{% if not can_reset_decisions %} is-empty{% endif %}" style="margin-top:1rem" data-can-reset="{{ can_reset_decisions|yesno:'1,0' }}" data-warn-title="Clear decisions and Memory?" data-warn-body="This permanently deletes Accept / Edit / Reject history and every saved example in Memory. Your company playbook rules stay. This cannot be undone.">
   {% csrf_token %}
   <input type="hidden" name="target" value="decisions">
-  <h2>Reset decisions</h2>
-  <p class="meta">Clears saved Accept/Edit/Reject history and Memory. Playbook rules stay.</p>
-  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
-  <button type="submit" class="btn danger">Reset decisions</button>
+  <h2>Clear decisions &amp; Memory</h2>
+  <p class="meta">Removes Accept / Edit / Reject history and past examples we reuse when drafting. Company playbook rules stay.</p>
+  {% if not can_reset_decisions %}
+    <p class="lab-empty-hint">Already clear. Nothing to reset.</p>
+  {% endif %}
+  <label>Confirm
+    <input class="lab-confirm" name="confirm" placeholder="type RESET here" autocomplete="off" {% if not can_reset_decisions %}disabled{% else %}required{% endif %}>
+  </label>
+  <button type="submit" class="btn danger lab-submit" disabled>Clear decisions</button>
 </form>
 
-<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+<form method="post" class="agent-assist-panel rise-in lab-reset-form{% if not can_reset_contracts %} is-empty{% endif %}" style="margin-top:1rem" data-can-reset="{{ can_reset_contracts|yesno:'1,0' }}" data-warn-title="Delete all contracts?" data-warn-body="This permanently deletes every uploaded contract, its review, and Memory examples (including any demo examples we pre-loaded). This cannot be undone.">
   {% csrf_token %}
   <input type="hidden" name="target" value="contracts">
-  <h2>Reset contracts</h2>
-  <p class="meta">Deletes every uploaded contract and its review.</p>
-  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
-  <button type="submit" class="btn danger">Reset contracts</button>
+  <h2>Delete all contracts</h2>
+  <p class="meta">Removes every uploaded contract and its review, and clears Memory (including demo examples).</p>
+  {% if not can_reset_contracts %}
+    <p class="lab-empty-hint">Already clear. Nothing to reset.</p>
+  {% endif %}
+  <label>Confirm
+    <input class="lab-confirm" name="confirm" placeholder="type RESET here" autocomplete="off" {% if not can_reset_contracts %}disabled{% else %}required{% endif %}>
+  </label>
+  <button type="submit" class="btn danger lab-submit" disabled>Delete contracts</button>
 </form>
 
-<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+<form method="post" class="agent-assist-panel rise-in lab-reset-form{% if not can_reset_overrides %} is-empty{% endif %}" style="margin-top:1rem" data-can-reset="{{ can_reset_overrides|yesno:'1,0' }}" data-warn-title="Clear muted rules?" data-warn-body="This turns muted rules back on for future reviews. Your official company playbook is not changed. Those rules may flag again.">
   {% csrf_token %}
   <input type="hidden" name="target" value="overrides">
-  <h2>Reset overrides</h2>
-  <p class="meta">Clears muted rules. Playbook itself is unchanged.</p>
-  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
-  <button type="submit" class="btn danger">Reset overrides</button>
+  <h2>Clear muted rules</h2>
+  <p class="meta">Turns muted rules back on. The official company playbook is not changed.</p>
+  {% if not can_reset_overrides %}
+    <p class="lab-empty-hint">Already clear. Nothing to reset.</p>
+  {% endif %}
+  <label>Confirm
+    <input class="lab-confirm" name="confirm" placeholder="type RESET here" autocomplete="off" {% if not can_reset_overrides %}disabled{% else %}required{% endif %}>
+  </label>
+  <button type="submit" class="btn danger lab-submit" disabled>Clear muted rules</button>
 </form>
 
-<form method="post" class="agent-assist-panel rise-in" style="margin-top:1rem">
+<form method="post" class="agent-assist-panel rise-in lab-reset-form{% if not can_reset_onboarding %} is-empty{% endif %}" style="margin-top:1rem" data-can-reset="{{ can_reset_onboarding|yesno:'1,0' }}" data-warn-title="Show setup again?" data-warn-body="Everyone who finished first-time setup will see the welcome steps again next time they sign in.">
   {% csrf_token %}
   <input type="hidden" name="target" value="onboarding">
-  <h2>Reset onboarding</h2>
-  <p class="meta">Show the first-time wizard again on next login.</p>
-  <label>Confirm <input name="confirm" placeholder="RESET" autocomplete="off" required></label>
-  <button type="submit" class="btn danger">Reset onboarding</button>
+  <h2>Show setup again</h2>
+  <p class="meta">Brings back the first-time welcome steps on next sign-in.</p>
+  {% if not can_reset_onboarding %}
+    <p class="lab-empty-hint">Already clear. Everyone still needs setup.</p>
+  {% endif %}
+  <label>Confirm
+    <input class="lab-confirm" name="confirm" placeholder="type RESET here" autocomplete="off" {% if not can_reset_onboarding %}disabled{% else %}required{% endif %}>
+  </label>
+  <button type="submit" class="btn danger lab-submit" disabled>Show setup again</button>
 </form>
+
+<dialog id="lab-warn-dialog" class="lab-warn-dialog">
+  <form method="dialog" class="lab-warn-inner">
+    <h2 id="lab-warn-title">Are you sure?</h2>
+    <p id="lab-warn-body" class="meta"></p>
+    <p class="lab-warn-disclaimer">This permanently deletes demo data and cannot be undone. Use only when you want a clean slate for a demo. Not for day-to-day legal work.</p>
+    <div class="lab-warn-actions">
+      <button value="cancel" class="btn btn-ghost" type="submit">Cancel</button>
+      <button value="confirm" class="btn danger" type="submit" id="lab-warn-confirm">Yes, continue</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>
+(function () {
+  var WORD = "{{ confirm_word|escapejs }}";
+  var dialog = document.getElementById("lab-warn-dialog");
+  var titleEl = document.getElementById("lab-warn-title");
+  var bodyEl = document.getElementById("lab-warn-body");
+  var pendingForm = null;
+
+  document.querySelectorAll(".lab-reset-form").forEach(function (form) {
+    var input = form.querySelector(".lab-confirm");
+    var btn = form.querySelector(".lab-submit");
+    var canReset = form.getAttribute("data-can-reset") === "1";
+    if (!input || !btn) return;
+
+    function sync() {
+      if (!canReset) {
+        btn.disabled = true;
+        input.disabled = true;
+        return;
+      }
+      btn.disabled = input.value.trim().toUpperCase() !== WORD;
+    }
+
+    input.addEventListener("input", sync);
+    input.addEventListener("change", sync);
+    sync();
+
+    form.addEventListener("submit", function (ev) {
+      if (!canReset) {
+        ev.preventDefault();
+        return;
+      }
+      if (input.value.trim().toUpperCase() !== WORD) {
+        ev.preventDefault();
+        return;
+      }
+      if (form.dataset.labConfirmed === "1") {
+        form.dataset.labConfirmed = "0";
+        return;
+      }
+      ev.preventDefault();
+      pendingForm = form;
+      if (titleEl) titleEl.textContent = form.getAttribute("data-warn-title") || "Are you sure?";
+      if (bodyEl) bodyEl.textContent = form.getAttribute("data-warn-body") || "";
+      if (dialog && typeof dialog.showModal === "function") {
+        dialog.showModal();
+      } else {
+        var ok = window.confirm(
+          (form.getAttribute("data-warn-title") || "Are you sure?") +
+          "\n\n" +
+          (form.getAttribute("data-warn-body") || "") +
+          "\n\nThis cannot be undone."
+        );
+        if (ok) {
+          form.dataset.labConfirmed = "1";
+          form.requestSubmit();
+        }
+      }
+    });
+  });
+
+  if (dialog) {
+    dialog.addEventListener("close", function () {
+      if (dialog.returnValue === "confirm" && pendingForm) {
+        var form = pendingForm;
+        pendingForm = null;
+        form.dataset.labConfirmed = "1";
+        form.requestSubmit();
+      } else {
+        pendingForm = null;
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

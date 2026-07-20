@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from apps.core.labels import humanize_label
 from apps.decisions.models import Decision
 from apps.learning.services.memory import (
     delete_decision_record,
@@ -32,14 +33,20 @@ def precedent_rows(limit: int = 200) -> list[dict[str, Any]]:
         if decision and not decision.memory_active:
             continue
         label = "Avoid" if rec.decision == "reject" else rec.decision.title()
+        rule_id = rec.playbook_rule_id or ""
+        clause = (rec.clause_text or "").strip()
+        final = (rec.final_text or "").strip()
         rows.append(
             {
                 "id": rec.id,
-                "rule_id": rec.playbook_rule_id or "",
-                "clause_snippet": (rec.clause_text or "")[:320],
+                "rule_id": rule_id,
+                "rule_label": humanize_label(rule_id, empty="General rule"),
+                "clause_snippet": clause[:320],
+                "clause_text": clause,
                 "decision": rec.decision,
                 "decision_label": label,
-                "final_text": (rec.final_text or "")[:500],
+                "final_text": final[:500],
+                "final_full": final,
                 "filename": rec.filename
                 or (decision.contract.filename if decision else ""),
                 "contract_id": (
@@ -105,4 +112,10 @@ def unlearn_precedent(record_id: str) -> bool:
 
 def active_overrides() -> list[dict[str, Any]]:
     data = load_overrides()
-    return list(data.get("overrides") or [])
+    rows = []
+    for o in data.get("overrides") or []:
+        row = dict(o)
+        rid = row.get("playbook_rule_id") or ""
+        row["rule_label"] = humanize_label(rid, empty="Muted rule")
+        rows.append(row)
+    return rows

@@ -50,7 +50,16 @@ class MemoryRevokeOverrideView(View):
 
 class MemoryUnlearnView(View):
     def post(self, request, precedent_id):
-        unlearn_precedent(str(precedent_id))
+        from django.contrib import messages
+
+        ok = unlearn_precedent(str(precedent_id))
+        if ok:
+            messages.success(request, "Stopped reusing that example.")
+        else:
+            messages.error(
+                request,
+                "Could not remove that example (it may already be gone).",
+            )
         next_url = request.POST.get("next") or "/memory/"
         return redirect(next_url)
 

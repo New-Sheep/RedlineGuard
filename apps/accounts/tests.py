@@ -53,7 +53,59 @@ class AuthHardeningTests(TestCase):
             HTTP_X_CSRFTOKEN=token,
         )
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(r.json().get("ok"))
+        body = r.json()
+        self.assertTrue(body.get("ok"))
+        self.assertIn("cleared_memory", body)
+
+    def test_admin_reset_decisions_clears_seeded_chroma(self):
+        """Seeded Memory has Chroma rows but 0 Decision ORM rows — wipe must clear both."""
+        from apps.learning.services import memory as memory_mod
+        from scratch.poc06_memory.models import DecisionRecord
+
+        memory_mod.reset_decision_store()
+        with self.settings(CHROMA_COLLECTION="test_lab_wipe_chroma", FAKE_EMBED=True):
+            memory_mod.reset_decision_store()
+            store = memory_mod.get_decision_store()
+            store.reset()
+            store.add_decision(
+                DecisionRecord(
+                    clause_text="Governing law of California",
+                    decision="accept",
+                    final_text="England and Wales",
+                    playbook_rule_id="gov_law",
+                    contract_id="seed",
+                    filename="seed.txt",
+                )
+            )
+            self.assertGreater(store.count(), 0)
+            self.client.login(username="admin_t", password="x")
+            self.client.get("/login/")
+            token = self.client.cookies.get("csrftoken").value
+            r = self.client.post(
+                "/api/admin/reset-decisions/",
+                data=json.dumps({"confirm": "RESET"}),
+                content_type="application/json",
+                HTTP_X_CSRFTOKEN=token,
+            )
+            self.assertEqual(r.status_code, 200, r.content)
+            self.assertTrue(r.json().get("ok"))
+            memory_mod.reset_decision_store()
+            self.assertEqual(memory_mod.get_decision_store().count(), 0)
+            memory_mod.reset_decision_store()
+
+    def test_lab_html_requires_confirm_word(self):
+        self.client.login(username="admin_t", password="x")
+        self.client.get("/lab/")
+        token = self.client.cookies.get("csrftoken").value
+        r = self.client.post(
+            "/lab/",
+            data={"target": "onboarding", "confirm": "", "csrfmiddlewaretoken": token},
+        )
+        self.assertEqual(r.status_code, 302)
+        # Empty confirm should not flip onboarding
+        ap = self.admin.profile
+        ap.refresh_from_db()
+        self.assertTrue(ap.onboarding_complete)
 
     def test_lawyer_forbidden_admin_reset(self):
         self.client.login(username="lawyer_t", password="x")

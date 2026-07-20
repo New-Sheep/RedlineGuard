@@ -1,4 +1,4 @@
-"""Shared upload size validation (PRD F1 — 10 MB)."""
+"""Shared upload size validation (default 25 MB)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 
 
 def max_upload_bytes() -> int:
-    return int(getattr(settings, "MAX_UPLOAD_BYTES", 10 * 1024 * 1024))
+    return int(getattr(settings, "MAX_UPLOAD_BYTES", 25 * 1024 * 1024))
 
 
 def validate_upload_size(upload) -> None:

@@ -65,7 +65,10 @@ class DecisionUndoView(View):
     def post(self, request, pk):
         decision = get_object_or_404(Decision, pk=pk)
         undo_decision(decision)
-        messages.success(request, "Decision undone (memory unlearned if linked).")
+        messages.success(
+            request,
+            "Decision undone. If it was saved in Memory, that example was removed too.",
+        )
         return redirect(request.POST.get("next") or "decisions:history")
 
 
@@ -73,7 +76,10 @@ class DecisionRedoView(View):
     def post(self, request, pk):
         decision = get_object_or_404(Decision, pk=pk)
         redo_decision(decision)
-        messages.success(request, "Decision redone (re-Accept if memory needed).")
+        messages.success(
+            request,
+            "Decision restored. Accept again if you want it back in Memory.",
+        )
         return redirect(request.POST.get("next") or "decisions:history")
 
 

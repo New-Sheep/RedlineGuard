@@ -35,7 +35,7 @@ def suggest_gaps_from_decisions(
 ) -> GapSuggestion:
     if fake_llm() or not llm_gap_suggest():
         return GapSuggestion(
-            rationale="Enable LLM_GAP_SUGGEST=1 with FAKE_LLM=0 for live suggestions.",
+            rationale="Suggestions need live AI (ask your admin), or reject a few more issues first.",
             rules=[],
         )
     try:

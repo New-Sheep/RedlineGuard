@@ -11,10 +11,10 @@ class DecisionForm(forms.Form):
         label="Decision",
         widget=forms.RadioSelect(attrs={"class": "decision-native"}),
         help_text=(
-            "Accept/Edit learn for next similar drafts. "
-            "Override & accept as-is suppresses this playbook rule going forward "
-            "(writes playbook_overrides.json - not the golden playbook). "
-            "Report false positive marks a bad flag without teaching Memory."
+            "Accept or Edit: we remember this for the next similar clause. "
+            "Override & accept as-is: mute this playbook rule for now "
+            "(does not change the official company playbook). "
+            "Report false positive: mark a bad flag without teaching Memory."
         ),
     )
     final_text = forms.CharField(

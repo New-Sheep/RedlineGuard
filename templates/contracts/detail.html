@@ -11,7 +11,7 @@
     · Source: {{ contract.get_source_display }}
     · Quality: <strong>{{ contract.quality|default:"n/a" }}</strong>
     · Pages: {{ contract.page_count }}
-    · Chars: {{ contract.char_count }}
+    · Length: {{ contract.char_count }} characters
     {% if run %} · Score {{ run.risk_score }} · {{ run.playbook_name }}{% endif %}
   </p>
   <p style="margin-top:0.75rem;display:flex;flex-wrap:wrap;gap:0.5rem">

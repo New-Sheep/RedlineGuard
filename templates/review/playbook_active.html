@@ -2,83 +2,190 @@
 {% block title %}Active playbook - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero rise-in">
-  <h1>Active playbook</h1>
+  <h1>Active playbook
+    <span class="hint" title="Your company’s written rules for routine contracts. Reviews flag against these rules only.">What is this?</span>
+  </h1>
   {% if is_active_company_playbook %}
-    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">Active company playbook</p>
+    <p class="badge badge-proposed" style="display:inline-block;margin-bottom:0.5rem">Active company playbook</p>
     <p class="meta"><a href="{% url 'review:gap_suggest' %}">Suggest rules from your decisions</a></p>
-    <p>These are the rules used on every review. Import or draft updates, then Activate - nothing goes live silently.</p>
+    <p>These are the rules used on every review. Import or draft updates, then Activate. Nothing goes live silently.</p>
   {% else %}
     <p class="badge muted" style="display:inline-block;margin-bottom:0.5rem">No active company playbook</p>
     <p>We can’t reliably flag risk against your standards until rules are active.</p>
   {% endif %}
-  <p>
+  <div class="hero-actions">
     <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
+    <a class="btn btn-ghost" href="{% url 'review:playbook_blank' %}">Write your own rules</a>
     <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Draft starter from past contracts</a>
-  </p>
+  </div>
 </section>
 
 {% if is_active_company_playbook %}
-<div class="card-form rise-in">
-  <p><strong>{{ playbook.name }}</strong></p>
-  <p class="meta">Preferred governing law: {{ playbook.preferred_governing_law }}</p>
-  <p class="meta">Rules: {{ playbook.rules|length }}</p>
-  {% if audit %}
-    <p class="meta">Auditor: {% if audit.ok %}<span class="ok">OK</span>{% else %}<span class="badge">errors</span>{% endif %}
-      · {{ audit.warnings|length }} warning{{ audit.warnings|length|pluralize }}
-    </p>
-    {% if audit.errors %}
-      <ul class="meta">{% for e in audit.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+<div class="playbook-summary rise-in">
+  <div>
+    <h2 class="playbook-summary-name">{{ playbook.name }}</h2>
+    <p class="meta">Preferred governing law: {{ playbook.preferred_governing_law }}</p>
+  </div>
+  <div class="playbook-summary-stats">
+    <span class="playbook-stat"><strong>{{ playbook.rules|length }}</strong> rules</span>
+    {% if audit %}
+      <span class="playbook-stat">{% if audit.ok %}<span class="ok">Looks good</span>{% else %}Needs attention{% endif %}</span>
+      {% if audit.warnings %}
+        <span class="playbook-stat meta">{{ audit.warnings|length }} note{{ audit.warnings|length|pluralize }}</span>
+      {% endif %}
     {% endif %}
-    {% if audit.warnings %}
-      <ul class="meta">{% for w in audit.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
-    {% endif %}
+  </div>
+  {% if audit.errors %}
+    <ul class="meta playbook-summary-notes">{% for e in audit.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if audit.warnings %}
+    <ul class="meta playbook-summary-notes">{% for w in audit.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
   {% endif %}
 </div>
 
 {% if versions %}
-  <aside class="coverage-gaps rise-in">
-    <h2 class="meta" style="margin:0 0 0.35rem">Playbook versions (restore)</h2>
-    <p class="meta">Activate snapshots previous golden files. Restore never happens silently.</p>
-    <ul class="meta" style="list-style:none;padding:0;margin:0.5rem 0 0">
+  <details class="versions-panel rise-in">
+    <summary>Previous versions <span class="meta">({{ versions|length }})</span></summary>
+    <p class="meta">Each Activate saves a backup. Restore only when you mean to.</p>
+    <ul class="versions-list">
       {% for v in versions %}
-        <li style="margin:0.35rem 0;display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap">
+        <li>
           <code>{{ v.name }}</code>
-          <form method="post" style="display:inline">
+          <form method="post">
             {% csrf_token %}
+            <input type="hidden" name="action" value="restore">
             <input type="hidden" name="version" value="{{ v.name }}">
             <button type="submit" class="btn btn-sm btn-ghost">Restore</button>
           </form>
         </li>
       {% endfor %}
     </ul>
-  </aside>
+  </details>
 {% endif %}
 {% endif %}
 
-{% for rule in playbook.rules %}
-  <article class="card-form rule-card rise-in">
-    <h2>
-      {{ rule.clause_type }}
-      <span class="risk-badge {{ rule.severity|default:'medium' }}">{{ rule.severity|default:"medium"|title }}</span>
-    </h2>
-    <p><strong>Preferred:</strong> {{ rule.preferred }}</p>
-    <p><strong>Hard ceiling:</strong> {{ rule.hard_ceiling }}</p>
-    {% if rule.fallback_text %}
-      <p><strong>Fallback draft:</strong> {{ rule.fallback_text }}</p>
-    {% else %}
-      <p class="meta">No fallback - deviations need a human.</p>
-    {% endif %}
-  </article>
-{% empty %}
-  <div class="card-form rise-in">
-    <p><strong>No active rules yet.</strong></p>
-    <p>The app will not invent company policy. Import a playbook PDF, draft a starter from
-       past contracts, or keep the demo golden file. Vector memory only reuses
-       <em>past Accept/Edit decisions</em> - it does not replace a playbook.</p>
-    <p>
-      <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
-      <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Draft starter from past contracts</a>
-    </p>
+<section class="library-panel rise-in" aria-label="Your playbooks">
+  <h2 class="library-heading">Your playbooks</h2>
+  <p class="meta">Activate one for reviews. Import or write new rules any time.</p>
+
+  {% if library %}
+  <details class="library-combine-details">
+    <summary>Combine playbooks…</summary>
+    <form method="post" class="library-combine-bar" id="library-combine-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="combine">
+      <div class="library-combine-row">
+        <label class="library-combine-mode-label" for="combine-mode">Mode
+          <select id="combine-mode" name="combine_mode">
+            <option value="union" selected>Union: keep all topics</option>
+            <option value="intersection">Intersection: only shared topics</option>
+          </select>
+        </label>
+        <button type="submit" class="btn btn-sm">Combine selected</button>
+      </div>
+      <p class="help" style="margin:0">Tick two or more playbooks below, then Combine. Opens a draft. Nothing goes live until you Activate.</p>
+    </form>
+  </details>
+
+  <div class="library-cards">
+    {% for item in library %}
+    <article class="library-card {% if item.is_active %}is-active{% endif %}">
+      <header class="library-card-head">
+        <label class="library-check">
+          <input type="checkbox" form="library-combine-form" name="playbook_ids" value="{{ item.pk }}" aria-label="Select {{ item.name }} to combine">
+        </label>
+        <div class="library-card-title">
+          <h3><a href="{% url 'review:playbook_library_detail' pk=item.pk %}">{{ item.name }}</a></h3>
+          <p class="meta">{{ item.rule_count }} rule{{ item.rule_count|pluralize }}
+            {% if item.preferred_governing_law %} · {{ item.preferred_governing_law }}{% endif %}
+          </p>
+        </div>
+        {% if item.is_active %}
+          <span class="badge badge-proposed">Active</span>
+        {% else %}
+          <span class="badge muted">Saved</span>
+        {% endif %}
+      </header>
+      <div class="library-card-actions">
+        <a class="btn btn-sm btn-ghost" href="{% url 'review:playbook_library_detail' pk=item.pk %}">View</a>
+        <a class="btn btn-sm" href="{% url 'review:playbook_library_edit' pk=item.pk %}">Edit rules</a>
+        {% if item.is_active %}
+        <form method="post" onsubmit="return confirm('Deactivate this playbook? Reviews will have no company rules until you Activate another.');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="deactivate">
+          <input type="hidden" name="playbook_id" value="{{ item.pk }}">
+          <button type="submit" class="btn btn-sm btn-ghost">Deactivate</button>
+        </form>
+        {% else %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="activate">
+          <input type="hidden" name="playbook_id" value="{{ item.pk }}">
+          <button type="submit" class="btn btn-sm">Activate</button>
+        </form>
+        {% endif %}
+        <form method="post" onsubmit="return confirm('{% if item.is_active %}Delete the active playbook “{{ item.name|escapejs }}”? Reviews will have no company rules until you Activate another. This cannot be undone.{% else %}Delete “{{ item.name|escapejs }}” from the library? This cannot be undone.{% endif %}');">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete">
+          <input type="hidden" name="playbook_id" value="{{ item.pk }}">
+          <button type="submit" class="btn btn-sm btn-danger-ghost">Delete</button>
+        </form>
+        <form method="post" class="library-rename-inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="rename">
+          <input type="hidden" name="playbook_id" value="{{ item.pk }}">
+          <input type="text" name="name" value="{{ item.name }}" maxlength="200" aria-label="Rename {{ item.name }}">
+          <button type="submit" class="btn btn-sm btn-ghost">Rename</button>
+        </form>
+      </div>
+    </article>
+    {% endfor %}
   </div>
+
+  {% else %}
+  <div class="playbook-summary">
+    <p><strong>No saved playbooks yet.</strong></p>
+    <p class="meta">Upload a PDF, write rules from scratch, or draft a starter, then Activate to add it here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% if playbook.rules %}
+<section class="playbook-rules" aria-label="Active rules">
+  <h2 class="library-heading">Rules in the active playbook</h2>
+{% for rule in playbook.rules %}
+  <article class="playbook-rule sev-{{ rule.severity|default:'medium' }} rise-in">
+    <header class="playbook-rule-head">
+      <h2 class="playbook-rule-title">{{ rule.clause_label }}</h2>
+      <span class="risk-badge {{ rule.severity|default:'medium' }}">{{ rule.severity|default:"medium"|title }}</span>
+    </header>
+    <dl class="playbook-rule-body">
+      <div class="playbook-rule-row want">
+        <dt>Wants</dt>
+        <dd>{{ rule.preferred }}</dd>
+      </div>
+      <div class="playbook-rule-row refuse">
+        <dt>Refuses</dt>
+        <dd>{{ rule.hard_ceiling }}</dd>
+      </div>
+      <div class="playbook-rule-row fallback">
+        <dt>Fallback</dt>
+        <dd>{% if rule.fallback_text %}{{ rule.fallback_text }}{% else %}<span class="meta">None. Deviations need a human.</span>{% endif %}</dd>
+      </div>
+    </dl>
+  </article>
 {% endfor %}
+</section>
+{% elif not is_active_company_playbook %}
+  <div class="playbook-summary rise-in">
+    <p><strong>No active rules yet.</strong></p>
+    <p class="meta">The app will not invent company policy. Import a playbook PDF, write rules from
+       scratch, or draft a starter from past contracts.</p>
+    <div class="hero-actions">
+      <a class="btn" href="{% url 'review:playbook_import' %}">Upload firm playbook</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_blank' %}">Write your own rules</a>
+      <a class="btn btn-ghost" href="{% url 'review:playbook_starter' %}">Draft starter from past contracts</a>
+    </div>
+  </div>
+{% endif %}
 {% endblock %}

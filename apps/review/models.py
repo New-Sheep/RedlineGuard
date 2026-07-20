@@ -38,6 +38,7 @@ class PlaybookImport(models.Model):
         UPLOAD = "upload", "Upload"
         SAMPLE = "sample", "Sample"
         STARTER = "starter", "Starter from past contracts"
+        MANUAL = "manual", "Written from scratch"
 
     class Status(models.TextChoices):
         UPLOADED = "uploaded", "Uploaded"
@@ -98,6 +99,36 @@ class PlaybookImport(models.Model):
 
     def __str__(self) -> str:
         return f"{self.filename} ({self.status})"
+
+
+class CompanyPlaybook(models.Model):
+    """Named company playbook in the library (reviews use the single active golden file)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200)
+    preferred_governing_law = models.CharField(max_length=200, blank=True, default="")
+    document = models.JSONField(default=dict, blank=True)
+    is_active = models.BooleanField(default=False, db_index=True)
+    source_import = models.ForeignKey(
+        PlaybookImport,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="library_playbooks",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_active", "-updated_at"]
+
+    def __str__(self) -> str:
+        flag = "active" if self.is_active else "saved"
+        return f"{self.name} ({flag})"
+
+    @property
+    def rule_count(self) -> int:
+        return len((self.document or {}).get("rules") or [])
 
 
 class ReviewRun(models.Model):

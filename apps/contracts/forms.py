@@ -12,7 +12,7 @@ from apps.core.uploads import validate_upload_size
 DEMO_SAMPLE_LABELS: dict[str, str] = {
     "demo_clean_flags.txt": "Demo - clean contract (2-4+ playbook flags)",
     "demo_short_nda.txt": "Demo - short form (2 flags)",
-    "injection_hostile.txt": "Demo - hostile / injection (Journey C halt)",
+    "injection_hostile.txt": "Demo - unsafe sample (security stop)",
 }
 
 

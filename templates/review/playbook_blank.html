@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Write your own rules - RedlineGuard{% endblock %}
+{% block content %}
+<section class="hero rise-in">
+  <h1>Write your own rules</h1>
+  <p>Build a firm playbook without uploading a PDF. Give keywords or a short instruction per rule. AI drafts the fields, you edit, then Activate.</p>
+  <p class="meta">Nothing goes live until you Activate. We keep a backup of the previous company playbook.</p>
+  <p>
+    <a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a>
+    ·
+    <a href="{% url 'review:playbook_import' %}">Import a PDF instead</a>
+  </p>
+</section>
+
+<form method="post" class="card-form rise-in" style="max-width:28rem">
+  {% csrf_token %}
+  <p>Start with one blank rule card. On the next screen you can type keywords and Draft with AI (up to 12 rules).</p>
+  <button type="submit" class="btn">Start writing rules</button>
+</form>
+{% endblock %}

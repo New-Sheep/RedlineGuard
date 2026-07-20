@@ -122,9 +122,15 @@ class PlaybookStarterForm(forms.Form):
 
 
 class PlaybookActivateForm(forms.Form):
-    name = forms.CharField(max_length=200, label="Playbook name")
+    name = forms.CharField(
+        max_length=200,
+        label="Playbook name",
+        help_text="A short title for this set of company rules (e.g. Commercial NDA playbook).",
+    )
     preferred_governing_law = forms.CharField(
-        max_length=200, label="Preferred governing law"
+        max_length=200,
+        label="Preferred governing law",
+        help_text="The law / venue your firm usually wants (e.g. England and Wales).",
     )
     confirm = forms.BooleanField(
         label="I have reviewed these rules and want to activate this playbook",
@@ -135,28 +141,45 @@ class PlaybookActivateForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.rule_count = rule_count
         for i in range(rule_count):
-            self.fields[f"rule_{i}_id"] = forms.CharField(max_length=120)
-            self.fields[f"rule_{i}_clause_type"] = forms.CharField(max_length=80)
+            self.fields[f"rule_{i}_id"] = forms.CharField(
+                max_length=120,
+                label="Rule name",
+                help_text="Internal label for the system (can look ugly). Lawyers can ignore this.",
+            )
+            self.fields[f"rule_{i}_clause_type"] = forms.CharField(
+                max_length=80,
+                label="Clause type",
+                help_text="Topic label: what this rule is about (e.g. Governing law, Liability, IP).",
+            )
             self.fields[f"rule_{i}_preferred"] = forms.CharField(
-                widget=forms.Textarea(attrs={"rows": 2})
+                label="Preferred position",
+                help_text="What your firm wants in the contract.",
+                widget=forms.Textarea(attrs={"rows": 2}),
             )
             self.fields[f"rule_{i}_hard_ceiling"] = forms.CharField(
-                widget=forms.Textarea(attrs={"rows": 2})
+                label="Hard limit",
+                help_text="What your firm refuses (the line you will not cross).",
+                widget=forms.Textarea(attrs={"rows": 2}),
             )
             self.fields[f"rule_{i}_fallback_text"] = forms.CharField(
                 required=False,
+                label="Fallback draft (optional)",
+                help_text="Suggested counter-language to offer when this rule flags.",
                 widget=forms.Textarea(attrs={"rows": 2}),
             )
             self.fields[f"rule_{i}_severity"] = forms.ChoiceField(
+                label="Severity",
+                help_text="How serious a mismatch is: high, medium, or low.",
                 choices=[
                     ("high", "high"),
                     ("medium", "medium"),
                     ("low", "low"),
-                ]
+                ],
             )
             self.fields[f"rule_{i}_match_any"] = forms.CharField(
                 required=False,
-                help_text="Comma-separated phrases to detect in contracts",
+                label="Phrases we look for",
+                help_text="Comma-separated words/phrases that trigger a flag in the other side’s contract.",
                 widget=forms.Textarea(attrs={"rows": 2}),
             )
 

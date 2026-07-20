@@ -3,9 +3,10 @@
 {% block content %}
 <section class="hero rise-in">
   <h1>Import a playbook PDF</h1>
-  <p>Proposed from your PDF - review before activating. You never need to write JSON.</p>
+  <p>We propose rules from your PDF. You review them before anything goes live. No coding required.</p>
   <p><a href="{% url 'review:playbook_active' %}">&larr; Active playbook</a>
-     · <a href="{% url 'review:playbook_starter' %}">Starter from past contracts</a></p>
+     · <a href="{% url 'review:playbook_starter' %}">Starter from past contracts</a>
+     · <a href="{% url 'review:playbook_blank' %}">No PDF? Write rules from scratch</a></p>
 </section>
 
 <form method="post" enctype="multipart/form-data" class="card-form rise-in" style="max-width:28rem">

@@ -2,26 +2,56 @@
 {% block title %}Review proposed rules - RedlineGuard{% endblock %}
 {% block content %}
 <section class="hero">
-  <h1>Review proposed rules</h1>
-  {% if is_proposed_not_active %}
-    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">Proposed - not active yet</p>
+  <h1>{% if is_edit %}Edit playbook rules{% else %}Review proposed rules{% endif %}</h1>
+  <div class="playbook-status-row">
+    {% if is_edit %}
+      <span class="badge badge-proposed" title="Changes go live only when you Activate">Editing, not saved yet</span>
+    {% elif is_proposed_not_active %}
+      <span class="badge badge-proposed" title="Nothing is company policy until you Activate">Proposed, not active yet</span>
+    {% endif %}
+    {% if llm_upgrade == "pending" %}
+      <span class="badge badge-llm-pending" id="llm-upgrade-badge">AI still refining… (you can edit now)</span>
+    {% elif llm_upgrade == "done" and import_obj.proposal_source and import_obj.proposal_source|lower != "fake" %}
+      <span class="badge badge-llm-done">AI updated this draft</span>
+    {% endif %}
+    {% if is_edit %}
+      <span class="badge badge-manual">Library edit</span>
+    {% elif is_manual %}
+      <span class="badge badge-manual">Written by you</span>
+    {% elif import_obj.proposal_source %}
+      <span class="badge" id="proposal-source-badge">
+        {% with src=import_obj.proposal_source|lower %}
+          {% if src == "fake" %}Drafted in demo mode
+          {% elif src == "ollama" %}Drafted by local AI
+          {% elif src == "nvidia" or src == "deepseek" or src == "moonshot" or src == "http" %}Drafted by cloud AI
+          {% else %}Drafted by AI{% endif %}
+        {% endwith %}
+      </span>
+    {% endif %}
+  </div>
+  <div id="llm-upgrade-banner" class="alert" hidden style="margin-top:0.75rem">
+    AI updated the draft.
+    <a href="?">Refresh to see changes</a>
+    (unsaved typing in the form will be lost on refresh).
+  </div>
+  {% if is_edit %}
+  <p>Change, add, or remove rules below, then Activate to save. Reviews keep the previous version until then. Not legal advice.</p>
+  {% else %}
+  <p>From <strong>{{ import_obj.filename }}</strong>. Edit in plain language, then Activate. Not legal advice.</p>
   {% endif %}
-  {% if import_obj.proposal_source %}
-    <p class="badge" style="display:inline-block;margin-bottom:0.5rem">
-      Proposed by {{ import_obj.proposal_source|upper }}
-      {% if import_obj.proposal_model %}· {{ import_obj.proposal_model }}{% endif %}
-    </p>
+  {% if not is_manual and not is_edit %}
+  <p class="meta">Tip: a good rule states what your firm wants, what it refuses, and which phrases should raise a flag. Guidance manuals often produce weak proposals. Edit heavily before Activate.</p>
+  {% else %}
+  <p class="meta">Tip: a good rule states what your firm wants, what it refuses, and which phrases should raise a flag.</p>
   {% endif %}
-  <p>From <strong>{{ import_obj.filename }}</strong>. Edit in plain language, then activate. Not legal advice.</p>
   {% if is_starter %}
-    <p class="meta">Origin: starter from past contracts (AI-proposed - not company policy until Activate).</p>
+    <p class="meta">Built from past contracts as a starter. AI-proposed, not company policy until you Activate.</p>
   {% endif %}
-  <p class="meta">Status: {{ import_obj.get_status_display }}</p>
   {% if audit %}
-    <aside class="coverage-gaps" style="margin:0.75rem 0">
-      <h2 class="meta" style="margin:0 0 0.35rem">Playbook auditor</h2>
-      <p class="meta">{{ audit.rule_count }} rules ·
-        {% if audit.ok %}<span class="ok">Ready to Activate</span>{% else %}<strong>Fix errors before Activate</strong>{% endif %}
+    <aside class="audit-panel {% if audit.ok %}audit-ok{% else %}audit-needs{% endif %}">
+      <h2 class="meta" style="margin:0 0 0.35rem">Ready to activate?</h2>
+      <p class="meta" style="margin:0">{{ audit.rule_count }} rules ·
+        {% if audit.ok %}<span class="ok">Looks ready</span>{% else %}<strong>Fix the items below before Activate</strong>{% endif %}
       </p>
       {% if audit.errors %}
         <ul class="meta">{% for e in audit.errors %}<li>{{ e }}</li>{% endfor %}</ul>
@@ -31,8 +61,10 @@
       {% endif %}
     </aside>
   {% endif %}
-  <p>
+  <p class="meta">
     <a href="{% url 'review:playbook_import' %}">&larr; Import another PDF</a>
+    ·
+    <a href="{% url 'review:playbook_blank' %}">Write from scratch</a>
     ·
     <a href="{% url 'review:playbook_starter' %}">Starter from past contracts</a>
   </p>
@@ -47,44 +79,230 @@
     <div class="form-errors">{{ form.non_field_errors }}</div>
   {% endif %}
 
-  <div class="card-form">
+  <div class="card-form playbook-meta-card">
     <div class="field">
       <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
       {{ form.name }}
+      {% if form.name.help_text %}<p class="help">{{ form.name.help_text }}</p>{% endif %}
       {{ form.name.errors }}
     </div>
     <div class="field">
       <label for="{{ form.preferred_governing_law.id_for_label }}">{{ form.preferred_governing_law.label }}</label>
       {{ form.preferred_governing_law }}
+      {% if form.preferred_governing_law.help_text %}<p class="help">{{ form.preferred_governing_law.help_text }}</p>{% endif %}
       {{ form.preferred_governing_law.errors }}
     </div>
   </div>
 
+  <details class="field-legend">
+    <summary>What each field means</summary>
+    <ul class="meta">
+      <li><strong>Preferred position</strong>: what your firm wants.</li>
+      <li><strong>Hard limit</strong>: what your firm refuses.</li>
+      <li><strong>Phrases we look for</strong>: words that trigger a flag.</li>
+      <li><strong>Severity</strong>: how serious a mismatch is.</li>
+      <li><strong>Fallback draft</strong>: optional counter-language.</li>
+      <li><strong>Rule name / clause type</strong>: labels for the system and topic.</li>
+    </ul>
+  </details>
+
+  <p class="meta rule-fold-hint">Rules are collapsed for scanning. Click one to expand and edit.</p>
+
   {% for row in rule_rows %}
-    <fieldset class="card-form rule-card">
-      <legend>Rule {{ forloop.counter }} <span class="badge muted">Proposed</span></legend>
-      <div class="field"><label>Id</label>{{ row.id }}{{ row.id.errors }}</div>
-      <div class="field"><label>Clause type</label>{{ row.clause_type }}{{ row.clause_type.errors }}</div>
-      <div class="field"><label>Preferred position</label>{{ row.preferred }}{{ row.preferred.errors }}</div>
-      <div class="field"><label>Hard ceiling</label>{{ row.hard_ceiling }}{{ row.hard_ceiling.errors }}</div>
-      <div class="field"><label>Fallback draft (optional)</label>{{ row.fallback_text }}{{ row.fallback_text.errors }}</div>
-      <div class="field"><label>Severity</label>{{ row.severity }}{{ row.severity.errors }}</div>
-      <div class="field"><label>Detect phrases</label>{{ row.match_any }}{{ row.match_any.errors }}
-        <p class="help">{{ row.match_any.help_text }}</p>
+    {% with sev=row.severity.value|default:"medium" %}
+    <details class="rule-card rule-sev-{{ sev }}"{% if row.start_open %} open{% endif %}>
+      <summary class="rule-fold-summary">
+        <span class="rule-fold-left">
+          <span class="rule-fold-chevron" aria-hidden="true"></span>
+          <span class="rule-num">{{ forloop.counter }}</span>
+          <span class="rule-fold-title" data-role="clause-label">{{ row.clause_label }}</span>
+          <span class="risk-badge {{ sev }}" data-role="sev-badge">{{ sev|title }}</span>
+          {% if row.has_errors %}<span class="badge muted">Needs fixes</span>{% endif %}
+        </span>
+        <span class="rule-fold-preview meta" data-role="preferred-preview">{% if row.preferred_preview %}{{ row.preferred_preview }}{% else %}No preferred position yet{% endif %}</span>
+        {% if rule_rows|length > 1 %}
+        <button type="submit" class="btn btn-sm btn-ghost rule-remove" name="action" value="remove_rule:{{ row.index }}" formnovalidate onclick="event.stopPropagation()">Remove</button>
+        {% endif %}
+      </summary>
+
+      <div class="rule-fold-body">
+        <div class="rule-ai-draft">
+          <div class="rule-ai-draft-head">
+            <strong>Draft with AI</strong>
+            {% if llm_provider_label %}
+              <span class="badge muted">{{ llm_provider_label }}</span>
+            {% endif %}
+          </div>
+          <p class="help" style="margin:0 0 0.45rem">Keywords or a sentence are enough. You can edit everything after.</p>
+          <label class="sr-only" for="draft_brief_{{ row.index }}">Keywords for rule {{ forloop.counter }}</label>
+          <textarea
+            id="draft_brief_{{ row.index }}"
+            name="draft_brief_{{ row.index }}"
+            rows="2"
+            placeholder="e.g. Liability: cap at 12 months fees; no unlimited"
+          >{{ row.draft_brief }}</textarea>
+          <button
+            type="submit"
+            class="btn btn-sm"
+            name="action"
+            value="draft_rule:{{ row.index }}"
+            formnovalidate
+          >Draft this rule</button>
+        </div>
+
+        <div class="rule-grid-meta">
+          <div class="field field-compact">
+            <label>{{ row.clause_type.label }}</label>
+            {{ row.clause_type }}{{ row.clause_type.errors }}
+            {% if row.clause_type.help_text %}<p class="help">{{ row.clause_type.help_text }}</p>{% endif %}
+          </div>
+          <div class="field field-compact field-severity">
+            <label>{{ row.severity.label }}</label>
+            {{ row.severity }}{{ row.severity.errors }}
+            {% if row.severity.help_text %}<p class="help">{{ row.severity.help_text }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="rule-zone rule-zone-want">
+          <p class="rule-zone-label">What your firm wants</p>
+          <div class="field">
+            <label>{{ row.preferred.label }}</label>
+            {{ row.preferred }}{{ row.preferred.errors }}
+            {% if row.preferred.help_text %}<p class="help">{{ row.preferred.help_text }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="rule-zone rule-zone-refuse">
+          <p class="rule-zone-label">What your firm refuses</p>
+          <div class="field">
+            <label>{{ row.hard_ceiling.label }}</label>
+            {{ row.hard_ceiling }}{{ row.hard_ceiling.errors }}
+            {% if row.hard_ceiling.help_text %}<p class="help">{{ row.hard_ceiling.help_text }}</p>{% endif %}
+          </div>
+        </div>
+
+        <div class="rule-zone rule-zone-detect">
+          <p class="rule-zone-label">How we spot it</p>
+          <div class="field">
+            <label>{{ row.match_any.label }}</label>
+            {{ row.match_any }}{{ row.match_any.errors }}
+            {% if row.match_any.help_text %}<p class="help">{{ row.match_any.help_text }}</p>{% endif %}
+          </div>
+          <div class="field">
+            <label>{{ row.fallback_text.label }}</label>
+            {{ row.fallback_text }}{{ row.fallback_text.errors }}
+            {% if row.fallback_text.help_text %}<p class="help">{{ row.fallback_text.help_text }}</p>{% endif %}
+          </div>
+        </div>
+
+        <details class="rule-advanced">
+          <summary>Internal label (optional)</summary>
+          <div class="field field-compact">
+            <label>{{ row.id.label }}</label>
+            {{ row.id }}{{ row.id.errors }}
+            {% if row.id.help_text %}<p class="help">{{ row.id.help_text }}</p>{% endif %}
+          </div>
+        </details>
       </div>
-    </fieldset>
+    </details>
+    {% endwith %}
   {% empty %}
-    <p>No rules were proposed. Try another PDF or edit after a re-import.</p>
+    <p>No rules yet. Add a rule below, or start from a PDF import.</p>
   {% endfor %}
 
-  <div class="card-form">
+  <div class="rule-toolbar">
+    {% if rule_rows|length < max_rules %}
+      <button type="submit" class="btn btn-ghost" name="action" value="add_rule" formnovalidate>Add another rule</button>
+    {% else %}
+      <p class="meta">Maximum of {{ max_rules }} rules reached.</p>
+    {% endif %}
+    <p class="meta rule-count-chip">{{ rule_rows|length }} of {{ max_rules }} rules</p>
+  </div>
+
+  <div class="card-form activate-footer">
     <div class="field">
-      <label>{{ form.confirm }} {{ form.confirm.label }}</label>
+      <label class="confirm-label">{{ form.confirm }} {{ form.confirm.label }}</label>
       {{ form.confirm.errors }}
     </div>
-    <p class="help">Activate backs up the previous golden file as <code>playbook_config.json.bak</code>.</p>
-    <button type="submit" class="btn">Activate playbook</button>
+    <p class="help">{% if is_edit %}Activate saves these rules to this playbook and makes them the live company rules. We keep a backup of the previous version.{% else %}Activate makes these the live company rules. We keep a backup of the previous version.{% endif %}</p>
+    <button type="submit" class="btn" name="action" value="activate" title="Nothing is company policy until you Activate">{% if is_edit %}Save and activate{% else %}Activate playbook{% endif %}</button>
   </div>
 </form>
+<script>
+(function () {
+  function humanize(value) {
+    var s = (value || "").trim().replace(/[_-]+/g, " ");
+    if (!s) return "Untitled rule";
+    return s.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+  }
+
+  function syncCard(card) {
+    if (!card) return;
+    var sevSelect = card.querySelector(".field-severity select");
+    var clauseInput = card.querySelector(".rule-grid-meta .field-compact input, .rule-grid-meta .field-compact textarea");
+    // First meta field is clause type
+    var metaFields = card.querySelectorAll(".rule-grid-meta .field-compact input[type='text'], .rule-grid-meta .field-compact input:not([type])");
+    if (!clauseInput && metaFields.length) clauseInput = metaFields[0];
+    var preferred = card.querySelector(".rule-zone-want textarea");
+    var sev = ((sevSelect && sevSelect.value) || "medium").toLowerCase();
+    card.classList.remove("rule-sev-high", "rule-sev-medium", "rule-sev-low");
+    card.classList.add("rule-sev-" + sev);
+    var badge = card.querySelector("[data-role='sev-badge']");
+    if (badge) {
+      badge.className = "risk-badge " + sev;
+      badge.setAttribute("data-role", "sev-badge");
+      badge.textContent = sev.charAt(0).toUpperCase() + sev.slice(1);
+    }
+    var label = card.querySelector("[data-role='clause-label']");
+    if (label && clauseInput) label.textContent = humanize(clauseInput.value);
+    var preview = card.querySelector("[data-role='preferred-preview']");
+    if (preview && preferred) {
+      var text = (preferred.value || "").trim();
+      preview.textContent = text ? text.slice(0, 100) : "No preferred position yet";
+    }
+  }
+
+  document.querySelectorAll(".rule-card").forEach(function (card) {
+    var sevSelect = card.querySelector(".field-severity select");
+    if (sevSelect) sevSelect.addEventListener("change", function () { syncCard(card); });
+    var clauseInput = card.querySelector(".rule-grid-meta .field-compact input");
+    if (clauseInput) {
+      clauseInput.addEventListener("input", function () { syncCard(card); });
+      clauseInput.addEventListener("change", function () { syncCard(card); });
+    }
+    var preferred = card.querySelector(".rule-zone-want textarea");
+    if (preferred) preferred.addEventListener("input", function () { syncCard(card); });
+  });
+
+  var upgradePending = {% if llm_upgrade == "pending" %}true{% else %}false{% endif %};
+  if (!upgradePending) return;
+  var statusUrl = "{% url 'review:playbook_import_status' import_obj.pk %}";
+  var tries = 0;
+  function pollUpgrade() {
+    tries += 1;
+    if (tries > 90) return;
+    fetch(statusUrl, { headers: { "Accept": "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        var state = (data.llm_upgrade || "").toLowerCase();
+        if (state === "done") {
+          var badge = document.getElementById("llm-upgrade-badge");
+          if (badge) badge.hidden = true;
+          var banner = document.getElementById("llm-upgrade-banner");
+          if (banner) banner.hidden = false;
+          return;
+        }
+        if (state === "skipped") {
+          var badge2 = document.getElementById("llm-upgrade-badge");
+          if (badge2) badge2.hidden = true;
+          return;
+        }
+        setTimeout(pollUpgrade, 2000);
+      })
+      .catch(function () { setTimeout(pollUpgrade, 3000); });
+  }
+  setTimeout(pollUpgrade, 1500);
+})();
+</script>
 {% endif %}
 {% endblock %}

@@ -5,7 +5,7 @@
 <section class="hero rise-in">
   <h1>Proposed rule from missed clause</h1>
   <p class="meta">{{ missed.contract.filename }} · {{ missed.get_status_display }}</p>
-  <p class="meta">AI proposes - you Activate. Never a silent playbook write.</p>
+  <p class="meta">AI proposes; you Activate. Nothing is added to the company playbook silently.</p>
 </section>
 
 <aside class="coverage-gaps rise-in">
@@ -15,17 +15,17 @@
 </aside>
 
 <article class="card-form rise-in">
-  <h2><code>{{ rule.id }}</code> · {{ rule.clause_type }}</h2>
+  <h2>{{ rule.clause_type }}</h2>
   <p><strong>Preferred:</strong> {{ rule.preferred }}</p>
-  <p><strong>Hard ceiling:</strong> {{ rule.hard_ceiling }}</p>
-  <p><strong>Needles:</strong> {{ rule.match_any|join:", " }}</p>
+  <p><strong>Hard limit:</strong> {{ rule.hard_ceiling }}</p>
+  <p><strong>Phrases we look for:</strong> {{ rule.match_any|join:", " }}</p>
   <p class="meta">Severity: {{ rule.severity }}</p>
 </article>
 
 {% if audit %}
   <aside class="coverage-gaps rise-in">
-    <p class="meta">Auditor:
-      {% if audit.ok %}<span class="ok">OK to Activate</span>{% else %}<strong>Errors</strong>{% endif %}
+    <p class="meta">Ready to activate?
+      {% if audit.ok %}<span class="ok">Yes</span>{% else %}<strong>Fix the items below first</strong>{% endif %}
     </p>
     {% for e in audit.errors %}<p class="meta">{{ e }}</p>{% endfor %}
     {% for w in audit.warnings %}<p class="meta">{{ w }}</p>{% endfor %}

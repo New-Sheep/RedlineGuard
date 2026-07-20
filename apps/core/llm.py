@@ -19,6 +19,27 @@ from apps.core.ollama_engine import OllamaEngine
 logger = logging.getLogger(__name__)
 
 
+def _should_retry_without_json_format(exc: BaseException) -> bool:
+    """Retry fmt=False only for format/API rejection — not timeouts/network."""
+    # HTTPError is a URLError subclass — check it first so 4xx still retries.
+    if isinstance(exc, urllib.error.HTTPError):
+        return 400 <= exc.code < 500
+    if isinstance(exc, (TimeoutError, urllib.error.URLError)):
+        return False
+    msg = str(exc).lower()
+    if "timed out" in msg or "timeout" in msg:
+        return False
+    if "http 4" in msg:  # e.g. "nvidia HTTP 400: ..." from _post
+        return True
+    if "response_format" in msg or "json_object" in msg:
+        return True
+    if isinstance(exc, (json.JSONDecodeError, ValueError)):
+        return True
+    if "json" in msg and ("parse" in msg or "decode" in msg or "not an object" in msg):
+        return True
+    return False
+
+
 class DraftSuggestion(BaseModel):
     draft_text: str = Field(min_length=1)
     rationale: str = ""
@@ -230,6 +251,10 @@ class HttpLlmClient:
                     use_fmt,
                     exc,
                 )
+                # Only retry without response_format on format/API rejection —
+                # never burn a second full timeout on read timeouts / network errors.
+                if use_fmt and not _should_retry_without_json_format(exc):
+                    break
         assert last_err is not None
         raise last_err
 

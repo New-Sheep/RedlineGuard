@@ -54,7 +54,8 @@ class PlaybookStarterE2Tests(TestCase):
 
             detail = client.get(f"/playbook/imports/{imp.pk}/")
             self.assertEqual(detail.status_code, 200)
-            self.assertContains(detail, "Proposed - not active yet")
+            self.assertContains(detail, "Proposed")
+            self.assertContains(detail, "not active yet")
 
             # Activate via service (form wiring covered elsewhere)
             rules = [

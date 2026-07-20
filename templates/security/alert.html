@@ -12,36 +12,36 @@
     {% if adjudication.plain_english %}
       {{ adjudication.plain_english }}
     {% else %}
-      This file looks like it is trying to override the AI (prompt injection). We will not run a normal contract review on it.
+      This file looks like it contains language that tries to hijack the AI
+      <span class="hint" title="Sometimes called prompt injection: hidden instructions meant to trick the system.">(what is that?)</span>.
+      We will not run a normal contract review on it.
     {% endif %}
   </p>
 
   {% if adjudication.excerpt_quote %}
-    <blockquote class="security-halt-quote">“{{ adjudication.excerpt_quote|truncatechars:160 }}”</blockquote>
+    <blockquote class="security-halt-quote">“{{ adjudication.excerpt_quote|truncatechars:280 }}”</blockquote>
   {% endif %}
 
   <ol class="steps security-halt-steps">
-    <li class="done">Document read</li>
-    <li class="halt">Security check stopped here</li>
-    <li class="muted">Playbook compare skipped</li>
-    <li class="muted">Draft skipped</li>
+    <li class="done">1. Document read</li>
+    <li class="halt">2. Security check stopped here</li>
+    <li class="muted">3. Playbook check skipped</li>
+    <li class="muted">4. Draft skipped</li>
   </ol>
 
-  {% if event.matches %}
-    <details class="security-halt-details">
+  {% if trigger_labels %}
+    <details class="security-halt-details" open>
       <summary>What triggered this</summary>
       <ul>
-        {% for m in event.matches %}
-          {% if "[compact]" not in m|lower %}
-            <li>{{ m }}</li>
-          {% endif %}
+        {% for m in trigger_labels %}
+          <li>{{ m }}</li>
         {% endfor %}
       </ul>
       {% if adjudication.verdict or adjudication.cue_class %}
-        <p class="meta" style="margin-top:0.75rem">
+        <p class="meta" style="margin-top:0.85rem;line-height:1.5">
           Reviewer note:
           {% if adjudication.cue_class == "hard" %}strong signal{% elif adjudication.cue_class == "ambiguous" %}ambiguous signal{% else %}{{ adjudication.cue_class }}{% endif %}
-          {% if adjudication.verdict %} · decision {{ adjudication.verdict }}{% endif %}
+          {% if adjudication.verdict %} · result: {{ adjudication.verdict }}{% endif %}
         </p>
       {% endif %}
     </details>
@@ -58,6 +58,6 @@
   {% endif %}
 </p>
 {% if can_override %}
-  <p class="meta" style="margin-top:0.5rem">Continuing is your call - you stay accountable.</p>
+  <p class="meta" style="margin-top:0.75rem;line-height:1.5">Continuing is your call. You stay accountable.</p>
 {% endif %}
 {% endblock %}

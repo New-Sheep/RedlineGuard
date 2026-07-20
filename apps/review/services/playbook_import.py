@@ -10,13 +10,65 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.review.models import PlaybookImport
-from apps.review.services.playbook_bootstrap import PlaybookDocument, get_bootstrap
+from apps.review.services.playbook_bootstrap import (
+    FakePlaybookBootstrap,
+    PlaybookDocument,
+)
 from scratch.poc01_extract.extract import extract_pdf
 from scratch.poc02_security.security import (
     detect_playbook_injection,
     fence,
     sanitize,
 )
+
+
+def mark_user_touched(imp: PlaybookImport) -> None:
+    """Prevent background LLM upgrade from clobbering lawyer edits."""
+    proposed = dict(imp.proposed_json or {})
+    meta = dict(proposed.get("_meta") or {})
+    if meta.get("user_touched"):
+        return
+    meta["user_touched"] = True
+    proposed["_meta"] = meta
+    imp.proposed_json = proposed
+
+
+def _apply_fake_propose(
+    imp: PlaybookImport,
+    *,
+    text: str,
+    source_name: str,
+    doc_name: str | None = None,
+    extra_meta: dict | None = None,
+) -> None:
+    """Instant editable draft; optionally schedule LLM upgrade."""
+    from apps.review.services.playbook_bootstrap_llm import wants_llm_upgrade
+    from apps.review.services.playbook_upgrade import start_llm_upgrade_async
+
+    doc = FakePlaybookBootstrap().propose(text, source_name=source_name)
+    if doc_name:
+        doc.name = doc_name
+    upgrade = "pending" if wants_llm_upgrade() else "skipped"
+    payload = doc.model_dump()
+    meta = {
+        "llm_upgrade": upgrade,
+        "user_touched": False,
+        "proposal_source": "fake",
+        "proposed_not_active": True,
+    }
+    if extra_meta:
+        meta.update(extra_meta)
+    payload["_meta"] = meta
+    imp.proposed_json = payload
+    imp.proposal_source = "fake"
+    imp.proposal_model = "FakePlaybookBootstrap"
+    imp.status = PlaybookImport.Status.PROPOSED
+    imp.error_message = ""
+    imp.progress_step = PlaybookImport.ProgressStep.DONE
+    imp.progress_label = "Rules ready to review"
+    imp.save()
+    if upgrade == "pending":
+        start_llm_upgrade_async(imp)
 
 
 def resolve_playbook_path(imp: PlaybookImport) -> Path:
@@ -111,24 +163,17 @@ def run_import_and_propose(imp: PlaybookImport) -> PlaybookImport:
         imp.set_progress(
             PlaybookImport.ProgressStep.PROPOSING, "Proposing rules from playbook"
         )
-        doc = get_bootstrap().propose(cleaned, source_name=imp.filename)
-        from apps.review.services.playbook_bootstrap_llm import bootstrap_meta
-
-        meta = bootstrap_meta()
-        imp.proposed_json = doc.model_dump()
-        imp.proposal_source = meta["proposal_source"]
-        imp.proposal_model = meta["proposal_model"]
-        imp.status = PlaybookImport.Status.PROPOSED
-        imp.error_message = ""
-        imp.progress_step = PlaybookImport.ProgressStep.DONE
-        imp.progress_label = "Rules ready to review"
+        _apply_fake_propose(
+            imp, text=cleaned, source_name=imp.filename or "playbook"
+        )
+        return imp
     except Exception as exc:  # noqa: BLE001
         imp.status = PlaybookImport.Status.FAILED
         imp.error_message = str(exc)
         imp.progress_step = PlaybookImport.ProgressStep.DONE
         imp.progress_label = "Failed"
-    imp.save()
-    return imp
+        imp.save()
+        return imp
 
 
 def _run_starter_and_propose(imp: PlaybookImport) -> PlaybookImport:
@@ -166,35 +211,24 @@ def _run_starter_and_propose(imp: PlaybookImport) -> PlaybookImport:
             PlaybookImport.ProgressStep.PROPOSING,
             "Proposing starter rules from past contracts",
         )
-        doc = get_bootstrap().propose(
-            combined, source_name=f"starter from {n} past contracts"
+        _apply_fake_propose(
+            imp,
+            text=combined,
+            source_name=f"starter from {n} past contracts",
+            doc_name=f"Starter playbook (from {n} past contracts)",
+            extra_meta={
+                "origin": "starter",
+                "contract_count": n,
+            },
         )
-        # Prefer a clear starter name for Activate UI
-        doc.name = f"Starter playbook (from {n} past contracts)"
-        from apps.review.services.playbook_bootstrap_llm import bootstrap_meta
-
-        meta = bootstrap_meta()
-        imp.proposed_json = doc.model_dump()
-        # Mark provenance for F28 labels
-        imp.proposed_json["_meta"] = {
-            "origin": "starter",
-            "proposed_not_active": True,
-            "contract_count": n,
-            "proposal_source": meta["proposal_source"],
-        }
-        imp.proposal_source = meta["proposal_source"]
-        imp.proposal_model = meta["proposal_model"]
-        imp.status = PlaybookImport.Status.PROPOSED
-        imp.error_message = ""
-        imp.progress_step = PlaybookImport.ProgressStep.DONE
-        imp.progress_label = "Rules ready to review"
+        return imp
     except Exception as exc:  # noqa: BLE001
         imp.status = PlaybookImport.Status.FAILED
         imp.error_message = str(exc)
         imp.progress_step = PlaybookImport.ProgressStep.DONE
         imp.progress_label = "Failed"
-    imp.save()
-    return imp
+        imp.save()
+        return imp
 
 
 def load_active_playbook() -> dict:
@@ -210,6 +244,48 @@ def load_active_playbook() -> dict:
     data = json.loads(path.read_text(encoding="utf-8"))
     data["empty"] = not bool(data.get("rules"))
     return data
+
+
+def blank_playbook_document() -> dict:
+    """Skeleton playbook for the write-from-scratch path (one empty rule card)."""
+    return {
+        "version": 1,
+        "name": "My firm playbook",
+        "preferred_governing_law": "England and Wales",
+        "rules": [
+            {
+                "id": "rule_1",
+                "clause_type": "",
+                "preferred": "",
+                "hard_ceiling": "",
+                "fallback_text": None,
+                "severity": "medium",
+                "match_any": [],
+            }
+        ],
+        "_meta": {
+            "origin": "manual",
+            "proposed_not_active": True,
+            "proposal_source": "manual",
+        },
+    }
+
+
+def create_blank_playbook_import() -> PlaybookImport:
+    """Create a proposed PlaybookImport ready for the activate form (no PDF)."""
+    doc = blank_playbook_document()
+    return PlaybookImport.objects.create(
+        filename="Written from scratch",
+        source=PlaybookImport.Source.MANUAL,
+        proposed_json=doc,
+        proposal_source="manual",
+        proposal_model="",
+        status=PlaybookImport.Status.PROPOSED,
+        progress_step=PlaybookImport.ProgressStep.DONE,
+        progress_label="Ready to write rules",
+        extracted_text="",
+        error_message="",
+    )
 
 
 def document_from_form(
@@ -241,13 +317,30 @@ def activate_playbook(imp: PlaybookImport, doc: PlaybookDocument) -> Path:
         shutil.copy2(target, versions_dir / f"playbook_{stamp}.json")
     payload = doc.model_dump()
     # Never write UI-only meta into the golden file
+    meta = dict((imp.proposed_json or {}).get("_meta") or {})
+    library_id = meta.get("library_id")
     payload.pop("_meta", None)
     target.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    imp.proposed_json = {**payload, "_meta": {"activated": True, "origin": imp.source}}
+    imp.proposed_json = {
+        **payload,
+        "_meta": {
+            "activated": True,
+            "origin": meta.get("origin") or imp.source,
+            "library_id": library_id,
+        },
+    }
     imp.status = PlaybookImport.Status.ACTIVATED
     imp.activated_at = timezone.now()
     imp.error_message = ""
     imp.save()
+    try:
+        from apps.review.services.playbook_library import upsert_from_activation
+
+        upsert_from_activation(
+            payload, source_import=imp, library_id=library_id
+        )
+    except Exception:
+        pass
     try:
         from apps.decisions.services.lifecycle import log_audit
         from apps.decisions.models import AuditEvent

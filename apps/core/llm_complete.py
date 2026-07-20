@@ -55,10 +55,13 @@ def provider_label_from_env() -> str:
     return "Ollama"
 
 
-def complete_json(*, system: str, user: str) -> dict[str, Any]:
+def complete_json(
+    *, system: str, user: str, timeout_s: float | None = None
+) -> dict[str, Any]:
     """Route to HTTP or Ollama complete_json. Raises if Fake.
 
     Redacts PII on outbound payloads for real LLM clients (not Fake).
+    Optional timeout_s overrides the HTTP client's default (playbook propose).
     """
     global _last_pii_meta
     client = get_llm_client()
@@ -87,6 +90,15 @@ def complete_json(*, system: str, user: str) -> dict[str, Any]:
         pass
 
     if isinstance(client, HttpLlmClient):
+        if timeout_s is not None:
+            client = HttpLlmClient(
+                api_key=client.api_key,
+                base_url=client.base_url,
+                model=client.model,
+                prefer_json_object=client.prefer_json_object,
+                timeout_s=float(timeout_s),
+                provider_name=client.provider_name,
+            )
         return client.complete_json(system=sys_r, user=usr_r)
     if isinstance(client, OllamaLlmClient):
         return client.engine.complete_json(system=sys_r, user=usr_r)

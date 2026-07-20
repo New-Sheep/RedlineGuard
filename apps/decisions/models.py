@@ -30,7 +30,7 @@ class Decision(models.Model):
     chroma_id = models.CharField(max_length=64, blank=True, default="")
     memory_active = models.BooleanField(
         default=True,
-        help_text="False after Unlearn — precedent should not be reused",
+        help_text="False after Unlearn; precedent should not be reused",
     )
     memory_meta = models.JSONField(
         default=dict,
@@ -39,7 +39,7 @@ class Decision(models.Model):
     )
     superseded = models.BooleanField(
         default=False,
-        help_text="True after Undo — excluded from active history",
+        help_text="True after Undo; excluded from active history",
     )
     superseded_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

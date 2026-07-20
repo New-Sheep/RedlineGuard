@@ -48,7 +48,7 @@
           <a href="{% url 'review:playbook_import' %}">Import</a>
         </span>
         {% if user.is_authenticated %}
-          {% if user.is_staff %}<a href="{% url 'accounts:lab_reset' %}">Lab</a>{% endif %}
+          {% if user.is_staff %}<a href="{% url 'accounts:lab_reset' %}">Reset demo</a>{% endif %}
           <form method="post" action="{% url 'accounts:logout' %}" class="nav-logout">
             {% csrf_token %}
             <button type="submit" class="btn-text" title="Signed in as {{ user.username }}">Sign out</button>

@@ -20,7 +20,7 @@
     </svg>
     <div class="risk-gauge-label">
       <span class="score tabular">{{ run.risk_score }}</span>
-      <span class="of">{{ verdict.score_label|default:"Risk score" }}</span>
+      <span class="of" title="Higher means more playbook mismatches found on this contract">{{ verdict.score_label|default:"Risk score" }}</span>
     </div>
   </div>
   {% endif %}

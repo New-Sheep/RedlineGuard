@@ -4,12 +4,12 @@
 <section class="hero rise-in">
   <h1>Audit log</h1>
   <p class="meta">Who did what, in order.
-    {% if chain_ok %}<span class="ok">Integrity check OK</span>{% else %}<strong>Integrity warning</strong> - {{ chain_msg }}{% endif %}
+    {% if chain_ok %}<span class="ok" title="Entries link together so gaps or edits would show up.">Log looks complete</span>{% else %}<strong>Log warning</strong>: {{ chain_msg }}{% endif %}
   </p>
 </section>
 
-<form method="get" class="filters rise-in" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 1rem;align-items:end">
-  <label class="meta">Kind
+<form method="get" class="filters rise-in">
+  <label class="filters-field">Kind
     <select name="kind">
       <option value="">All</option>
       {% for val, label in kind_choices %}
@@ -17,7 +17,7 @@
       {% endfor %}
     </select>
   </label>
-  <button type="submit" class="btn btn-sm">Filter</button>
+  <button type="submit" class="btn">Filter</button>
 </form>
 
 {% if events %}

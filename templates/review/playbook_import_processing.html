@@ -67,11 +67,11 @@
   const tipEl = document.getElementById("processing-tip");
   const items = document.querySelectorAll("#progress-steps [data-step]");
   const tips = [
-    "Steps: Queued → Reading PDF → Security check → Propose rules → Review & Activate.",
-    "Large playbook PDFs spend most time in Reading + Propose (especially if FAKE_LLM=0).",
-    "With FAKE_LLM=1, propose is local needle matching and usually finishes in seconds.",
-    "Proposed rules are editable - nothing goes live until you Activate.",
-    "Memory (Accept/Edit) never rewrites the golden playbook - only Activate does."
+    "Steps: Queued → Reading the PDF → Security check → Propose rules → You review & Activate.",
+    "Large playbook PDFs spend most time reading the file and drafting proposed rules.",
+    "In demo mode, rule proposals are based on phrase matching and usually finish in seconds.",
+    "Proposed rules are editable. Nothing goes live until you Activate.",
+    "Accepting a rewrite never changes the official playbook. Only Activate does."
   ];
   let tipIdx = 0;
   if (tipEl) {

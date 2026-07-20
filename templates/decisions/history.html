@@ -6,8 +6,8 @@
   <p class="meta">Your Accept / Edit / Reject choices. Undo if you clicked by mistake.</p>
 </section>
 
-<form method="get" class="filters rise-in" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 1rem;align-items:end">
-  <label class="meta">Action
+<form method="get" class="filters rise-in">
+  <label class="filters-field">Action
     <select name="action">
       <option value="">All</option>
       {% for val, label in action_choices %}
@@ -15,16 +15,16 @@
       {% endfor %}
     </select>
   </label>
-  <label class="meta">Rule id
-    <input type="text" name="rule_id" value="{{ rule_id_filter }}" placeholder="governing_law…">
+  <label class="filters-field">Rule
+    <input type="text" name="rule_id" value="{{ rule_id_filter }}" placeholder="e.g. governing law…">
   </label>
-  <label class="meta">Contract
+  <label class="filters-field">Contract
     <input type="text" name="contract" value="{{ contract_filter }}" placeholder="filename…">
   </label>
-  <label class="meta">
+  <label class="filters-check">
     <input type="checkbox" name="undone" value="1" {% if show_undone %}checked{% endif %}> Show undone
   </label>
-  <button type="submit" class="btn btn-sm">Filter</button>
+  <button type="submit" class="btn">Filter</button>
 </form>
 
 {% if decisions %}
@@ -69,6 +69,6 @@
   </table>
   {% include "partials/pagination.html" with page_obj=page_obj %}
 {% else %}
-  <p class="meta">No decisions yet. Complete a review rewrite to start the memory loop.</p>
+  <p class="meta">No decisions yet. Finish a review rewrite (Accept / Edit / Reject) to build history.</p>
 {% endif %}
 {% endblock %}

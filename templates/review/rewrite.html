@@ -34,16 +34,27 @@
       <p class="meta">No automatic rewrite - edit below or mark as a false positive.</p>
     {% endif %}
     <details style="margin-top:0.5rem">
-      <summary class="meta">Technical detail</summary>
+      <summary class="meta">Why this draft?</summary>
       <p class="meta">Playbook rule {{ finding.playbook_rule_id }}
         · {{ finding.deviation_reason }}
-        {% if finding.sources %} · matched via {{ finding.sources|join:", " }}{% endif %}
+        {% if finding.sources %} · How matched:
+          {% for src in finding.sources %}
+            {% if src == "rule" %}exact wording{% elif src == "semantic" %}similar meaning{% elif src == "llm" %}AI check{% else %}{{ src }}{% endif %}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        {% endif %}
       </p>
       {% if react_trace %}
-      <p class="meta"><strong>Draft agent steps</strong></p>
+      <p class="meta"><strong>How the draft was built</strong></p>
       <ol class="meta">
         {% for step in react_trace %}
-        <li>{{ step.tool }}</li>
+        <li>
+          {% if step.tool == "search_precedents" %}Looked up past decisions
+          {% elif step.tool == "check_playbook_rule" %}Checked the playbook rule
+          {% elif step.tool == "redact_pii" %}Removed personal data
+          {% elif step.tool == "propose_draft" %}Drafted rewrite
+          {% elif step.tool == "finish" %}Finished
+          {% else %}{{ step.tool }}{% endif %}
+        </li>
         {% endfor %}
       </ol>
       {% endif %}
@@ -74,7 +85,9 @@
   {% endif %}
   <div class="field">
     <label>{{ form.action.label }}</label>
-    <p class="help">Accept teaches Memory for next time. Override mutes this rule (does not rewrite the playbook).</p>
+    <p class="help">Accept teaches Memory for next time.
+      <span class="hint" title="Mute this rule for now. Does not change the official company playbook.">Override</span>
+      mutes this rule (does not change the official playbook).</p>
     <div class="decision-tiles" role="group" aria-label="Decision">
       <button type="button" class="decision-tile accept" data-value="accept">
         <span class="tile-title">Accept</span>

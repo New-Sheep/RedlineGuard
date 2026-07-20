@@ -176,6 +176,8 @@ LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "auto")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1:8b")
 OLLAMA_TIMEOUT_S = float(os.environ.get("OLLAMA_TIMEOUT_S", "120"))
+# Playbook PDF propose only (shorter than general 60s contract drafting).
+PLAYBOOK_LLM_TIMEOUT = float(os.environ.get("PLAYBOOK_LLM_TIMEOUT", "45"))
 # L2 closed-book judge after L0+L1.
 # None / unset => auto: on when FAKE_LLM=0, off when Fake.
 _llm_judge_env = os.environ.get("LLM_JUDGE")
@@ -204,7 +206,10 @@ DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 MOONSHOT_API_KEY = os.environ.get("MOONSHOT_API_KEY", "")
 NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
 
-MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+# Allow large PDF bodies through Django before our validator runs
+DATA_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
+FILE_UPLOAD_MAX_MEMORY_SIZE = MAX_UPLOAD_BYTES
 # Session-lite analyze rate limit (demable guard)
 MAX_ANALYZES_PER_HOUR = int(os.environ.get("MAX_ANALYZES_PER_HOUR", "30"))
 # Auth endpoint rate limit (login attempts per hour per session)

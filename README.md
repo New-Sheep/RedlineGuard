@@ -56,7 +56,7 @@ Admin: **`admin` / `admin-demo-2026`**. Set `REQUIRE_AUTH=0` only for local scri
 | Setup co-pilot | PDF import **or** starter from 3–5 past contracts proposes rules; Sarah **Activates**. Empty playbook = onboarding |
 | Decision memory (B1 / Sprint 5) | Clause-excerpt Chroma (`django_decisions_v2`); Memory page; provenance; Reject=Avoid; distance gate |
 | Override (B2) | “Override & accept as-is” appends to `playbook_overrides.json` — **never** rewrites the golden playbook |
-| Security | Uploads untrusted; sanitize + injection halt; adjudicator for ambiguous cues; **10 MB** upload cap |
+| Security | Uploads untrusted; sanitize + injection halt; adjudicator for ambiguous cues; **25 MB** upload cap |
 | Ingest | PDF / **DOCX** / TXT |
 | Live progress | Analyze runs in the background; Processing page shows steps (reading → security → playbook → draft) |
 | LLM drafts | Needs-human flags get suggested counters via `FAKE_LLM` (default Fake) or optional real API |

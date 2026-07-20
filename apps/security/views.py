@@ -10,8 +10,29 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views import View
 
 from apps.contracts.models import Contract
+from apps.core.labels import humanize_label
 from apps.review.services.pipeline import run_pipeline
 from apps.security.models import SecurityEvent
+
+
+def _trigger_labels(matches) -> list[str]:
+    """Dedupe and space out technical cue strings for lawyers."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for raw in matches or []:
+        text = str(raw or "").strip()
+        if not text or "[compact]" in text.lower():
+            continue
+        if "_" in text and " " not in text:
+            label = humanize_label(text, empty=text)
+        else:
+            label = text
+        key = label.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(label)
+    return out
 
 
 class SecurityAlertView(View):
@@ -25,6 +46,7 @@ class SecurityAlertView(View):
             .first()
         )
         adj = dict(event.adjudication or {}) if event else {}
+        matches = list(event.matches or []) if event else []
         return render(
             request,
             self.template_name,
@@ -32,6 +54,7 @@ class SecurityAlertView(View):
                 "contract": contract,
                 "event": event,
                 "adjudication": adj,
+                "trigger_labels": _trigger_labels(matches),
                 "can_override": bool(
                     contract.status == Contract.Status.HALTED
                     and event

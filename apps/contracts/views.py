@@ -158,7 +158,7 @@ class UploadView(View):
         start_analyze_async(contract)
         contract.refresh_from_db()
         if contract.status == Contract.Status.HALTED:
-            messages.error(request, "Security halt - this file looks hostile.")
+            messages.error(request, "Upload stopped. This file looks unsafe for AI review.")
             return redirect("security:alert", pk=contract.pk)
         if contract.status == Contract.Status.READY:
             messages.success(request, "Review ready.")

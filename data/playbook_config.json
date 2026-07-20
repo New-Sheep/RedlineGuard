@@ -1,102 +1,112 @@
 {
   "version": 1,
-  "name": "Startup Legal Playbook",
-  "preferred_governing_law": "Civil Law",
+  "name": "Imported playbook (Startup-Legal-Playbook.pdf)",
+  "preferred_governing_law": "England and Wales",
   "rules": [
     {
-      "id": "1",
-      "clause_type": "Jurisdiction",
-      "preferred": "Federal",
-      "hard_ceiling": "Provincial",
-      "fallback_text": "The Argentine Constitution establishes a federal governmental structure where the provinces reserve all the powers which have not been delegated to the federal government.",
-      "severity": "high",
-      "match_any": [
-        "Federal",
-        "Provincial"
-      ]
-    },
-    {
-      "id": "2",
-      "clause_type": "Corporate Structure",
-      "preferred": "Limited Liability Company",
-      "hard_ceiling": "Sole Proprietorship",
-      "fallback_text": "Argentine private law is mainly codified in the Argentine Civil and Commercial Code, whose latest amendment entered into force on August 1st, 2015 (\"CCCN\").",
+      "id": "governing_law_928619",
+      "clause_type": "governing_law",
+      "preferred": "England and Wales",
+      "hard_ceiling": "Flag non-UK governing law without Head of Legal approval",
+      "fallback_text": "This Agreement shall be governed by the laws of England and Wales.",
       "severity": "medium",
       "match_any": [
-        "Limited Liability Company",
-        "Sole Proprietorship"
+        "laws of the State of California",
+        "laws of California",
+        "State of New York",
+        "laws of the State of",
+        "Delaware"
       ]
     },
     {
-      "id": "3",
-      "clause_type": "Intellectual Property",
-      "preferred": "Patent",
-      "hard_ceiling": "Trademark",
-      "fallback_text": "The Argentine judicial system is divided into federal and provincial courts. The supreme judicial power is vested in the Argentine Supreme Court of Justice.",
-      "severity": "low",
-      "match_any": [
-        "Patent",
-        "Trademark"
-      ]
-    },
-    {
-      "id": "4",
-      "clause_type": "Data Protection",
-      "preferred": "GDPR",
-      "hard_ceiling": "Argentine Data Protection Law",
-      "fallback_text": "In this sense, although lower courts tend to follow decisions handed down by the higher courts (especially from the Supreme Court), their rulings are not binding.",
+      "id": "liability_cap_ca22ee",
+      "clause_type": "liability_cap",
+      "preferred": "Cap aggregate liability at 12 months fees (or documented hard cap)",
+      "hard_ceiling": "Unlimited liability is forbidden except standard carve-outs",
+      "fallback_text": "Each party's aggregate liability shall not exceed the fees paid under this Agreement in the twelve (12) months preceding the claim.",
       "severity": "high",
       "match_any": [
-        "GDPR",
-        "Argentine Data Protection Law"
+        "unlimited liability",
+        "uncapped liability",
+        "without limitation of liability"
       ]
     },
     {
-      "id": "5",
-      "clause_type": "Consumer Protection",
-      "preferred": "Consumer Law",
-      "hard_ceiling": "Employment Law",
-      "fallback_text": "Besides, the national legislative branch has enacted several legal statutes regarding specific fields of law (for example: Consumer Law, Employment Law, Personal Data Protection Law, Bankruptcy Law).",
+      "id": "indemnity_9582e5",
+      "clause_type": "indemnity",
+      "preferred": "Mutual, capped indemnity aligned to fees",
+      "hard_ceiling": "No uncapped or one-sided broad indemnification",
+      "fallback_text": "Each party's aggregate indemnification obligations shall not exceed the fees paid under this Agreement in the twelve (12) months preceding the claim.",
+      "severity": "high",
+      "match_any": [
+        "shall indemnify",
+        "indemnify and hold harmless",
+        "INDEMNIFICATION"
+      ]
+    },
+    {
+      "id": "ip_ownership_aff09b",
+      "clause_type": "ip_ownership",
+      "preferred": "Retain 100% ownership of background IP; customer gets limited license",
+      "hard_ceiling": "Never assign or transfer background IP / software copyrights",
+      "fallback_text": "PortSwigger retains all rights, title, and interest in its pre-existing Intellectual Property. Customer is granted a limited license to use deliverables as intended.",
+      "severity": "high",
+      "match_any": [
+        "assign all intellectual property",
+        "transfer ownership of",
+        "IP Surrender",
+        "work made for hire"
+      ]
+    },
+    {
+      "id": "confidentiality_term_261c22",
+      "clause_type": "confidentiality",
+      "preferred": "Confidentiality term of 3\u20135 years after termination",
+      "hard_ceiling": "No perpetual/indefinite confidentiality except trade secrets",
+      "fallback_text": "Confidentiality obligations shall survive for three (3) years from the date of disclosure (except for Trade Secrets, which remain protected while they qualify as such).",
       "severity": "medium",
       "match_any": [
-        "Consumer Law",
-        "Employment Law"
+        "perpetual confidentiality",
+        "indefinite confidentiality",
+        "in perpetuity"
       ]
     },
     {
-      "id": "6",
-      "clause_type": "Terms of Service",
-      "preferred": "Online Terms of Service",
-      "hard_ceiling": "Offline Terms of Service",
-      "fallback_text": "The criminal definitions in the ACC are not exhaustive, as several substantive laws introduced criminal offences.",
-      "severity": "low",
-      "match_any": [
-        "Online Terms of Service",
-        "Offline Terms of Service"
-      ]
-    },
-    {
-      "id": "7",
-      "clause_type": "Employee/Contractor",
-      "preferred": "Work for Hire",
-      "hard_ceiling": "Restrictions on Terminations",
-      "fallback_text": "The Argentine Constitution also provides for a tripartite system of government consisting of an executive branch, headed by the President, the legislative branch in the form of a Congress divided into two chambers \u2013 the Senate and the Chamber of Deputies\u2013, and the judicial branch.",
+      "id": "non_compete_19ac32",
+      "clause_type": "non_compete",
+      "preferred": "Do not accept non-compete clauses",
+      "hard_ceiling": "Non-competes require senior counsel exception",
+      "fallback_text": null,
       "severity": "high",
       "match_any": [
-        "Work for Hire",
-        "Restrictions on Terminations"
+        "non-compete",
+        "noncompete",
+        "shall not compete"
       ]
     },
     {
-      "id": "8",
-      "clause_type": "What Else",
-      "preferred": "Specific to Country",
-      "hard_ceiling": "Not Addressed Above",
-      "fallback_text": "The application and effect of any law or regulation upon a particular situation can vary depending upon the specific facts and circumstances, and so you should consult with a lawyer regarding the impact of any of these regimes in any particular instance.",
-      "severity": "low",
+      "id": "non_negotiable_e9edef",
+      "clause_type": "process",
+      "preferred": "Inbound paper should be negotiable",
+      "hard_ceiling": "Documents marked non-negotiable need senior counsel",
+      "fallback_text": null,
+      "severity": "high",
       "match_any": [
-        "Specific to Country",
-        "Not Addressed Above"
+        "Non-Negotiable",
+        "non-negotiable"
+      ]
+    },
+    {
+      "id": "equity_control_92e829",
+      "clause_type": "equity_control",
+      "preferred": "Counterparty must not retain majority ownership/control",
+      "hard_ceiling": "Never accept >=50% ownership or control by counterparty",
+      "fallback_text": null,
+      "severity": "high",
+      "match_any": [
+        "50.1%",
+        "majority ownership",
+        "maintain control"
       ]
     }
   ]

@@ -27,7 +27,7 @@ _MIN_USEFUL_CHARS = 40
 _EARLY_EMPTY_PAGES = 2
 
 IMAGE_ONLY_HINT = (
-    "No selectable text found. E-signed or scanned PDFs are often image-only — "
+    "No selectable text found. E-signed or scanned PDFs are often image-only. "
     "RedlineGuard needs a text layer. Use a Sample contract on the upload page, "
     "or OCR/export the PDF to text first."
 )

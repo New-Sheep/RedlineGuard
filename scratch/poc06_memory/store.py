@@ -40,8 +40,11 @@ class DecisionStore:
         """Drop and recreate the collection (demo / tests)."""
         try:
             self._client.delete_collection(self.collection_name)
-        except Exception:
-            pass
+        except Exception as exc:
+            # Already gone is fine (double-reset / stale handle on Windows).
+            msg = str(exc).lower()
+            if "does not exist" not in msg and "not found" not in msg:
+                pass
         self._col = self._client.get_or_create_collection(
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},

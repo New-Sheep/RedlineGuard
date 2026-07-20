@@ -4,38 +4,38 @@
 {% block content %}
 <section class="hero rise-in">
   <h1>How RedlineGuard earns trust</h1>
-  <p class="meta">Plain answers for counsel and security reviewers.</p>
+  <p class="meta">Plain answers for counsel. Extra detail for security reviewers is below.</p>
 </section>
 
 <article class="clean-pass-panel rise-in">
-  <h2>What you see on every flag</h2>
+  <h2>What you see on every issue</h2>
   <ul>
     <li>Which company rule it cites</li>
     <li>A short plain-English reason</li>
-    <li>Optional technical detail (how it matched)</li>
+    <li>Optional detail on how it matched (exact wording, similar meaning, or AI check)</li>
   </ul>
 </article>
 
 <article class="agent-assist-panel rise-in">
   <h2>What you see on every rewrite</h2>
   <ul>
-    <li>Where the draft came from (past decision, playbook, or AI)</li>
-    <li>Optional step-by-step of the draft agent (no secrets)</li>
+    <li>Where the draft came from (a past decision, the playbook, or AI)</li>
+    <li>Optional step-by-step of how the draft was built (no secrets)</li>
   </ul>
 </article>
 
 <article class="agent-assist-panel rise-in">
   <h2>Security basics</h2>
   <ul>
-    <li>Hostile uploads can halt the review</li>
-    <li>Personal data is stripped before AI calls when possible</li>
-    <li>Sign-in + CSRF protect destructive actions</li>
+    <li>Unsafe uploads can stop the review before a full check runs</li>
+    <li>Personal details are stripped before AI calls when we can</li>
+    <li>You must sign in; sensitive actions ask you to confirm</li>
   </ul>
 </article>
 
 <article class="agent-assist-panel rise-in">
   <h2>Audit trail</h2>
-  <p>Decisions and admin resets are logged in an append-only chain. We never delete the audit log from the product UI.</p>
+  <p>Decisions and admin resets are logged in order. You cannot delete the audit log from the product screens.</p>
 </article>
 
 <article class="clean-pass-panel rise-in">
@@ -43,7 +43,17 @@
   <ul>
     <li>Not legal advice</li>
     <li>Not a certified compliance product</li>
-    <li>Not full enterprise SSO</li>
+    <li>Not a full company single sign-on rollout</li>
   </ul>
 </article>
+
+<details class="coverage-gaps rise-in" style="margin-top:1.25rem">
+  <summary><strong>Technical detail</strong> <span class="meta">(for security reviewers)</span></summary>
+  <ul class="meta" style="margin:0.75rem 0 0;padding-left:1.1rem">
+    <li>Session sign-in; CSRF tokens on destructive posts</li>
+    <li>No enterprise SSO in this demo</li>
+    <li>Audit events form an append-only chain (gaps or edits would show up)</li>
+    <li>Draft steps are explainability only. They do not expose API keys</li>
+  </ul>
+</details>
 {% endblock %}
