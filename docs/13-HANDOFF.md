@@ -12,7 +12,7 @@
 | Deploy to a public URL? | **No.** Brief is local try + Loom/video. No Railway/Vercel/OCI hosting for this exercise. |
 | Windows `.exe` installer? | **No.** Wrong fit for a Django prototype; security engineers already have Python. |
 | Docker Compose? | **Not shipped.** Optional later; do not claim `docker compose up` until a real compose file exists. |
-| How do they get the code? | **GitHub clone** (preferred) or a **zip of the same tree**. |
+| How do they get the code? | **Zip of the same tree** (submission) or **GitHub clone**. |
 | Sample / Quick-demo docs? | **Yes — committed.** Reviewers must not hunt for external NDAs. |
 | Cloud LLM keys required? | **No.** Default path is fully offline (`FAKE_LLM=1`). |
 
