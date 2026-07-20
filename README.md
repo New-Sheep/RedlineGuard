@@ -8,11 +8,26 @@ Take-home prototype for PortSwigger’s AI Pioneer brief: **playbook-grounded** 
 
 ---
 
+## What’s in this zip / clone
+
+| Included | Not included (by design) |
+|----------|---------------------------|
+| Full Django app + templates + static CSS | `.venv`, `.env`, secrets, API keys |
+| Sample contracts, playbook PDFs, golden `playbook_config.json` | Runtime DB (`db.sqlite3`), Chroma under `data/vector_memory/` |
+| `.env.example`, this README, [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) | Docker / hosted URL / Windows `.exe` |
+| Offline Fake LLM path (no cloud keys required) | Production hardening claims |
+
+**Requirements:** Python **3.11+**, ~10 minutes to first demo. Prefer unzip or clone; run locally only.
+
+**Same tree on GitHub:** https://github.com/New-Sheep/RedlineGuard
+
+---
+
 ## How PortSwigger should try this
 
 | | |
 |---|---|
-| **Delivery** | Clone from GitHub (or unzip the same tree). **No hosted deploy.** No `.exe`. **No Docker** in this MVP. |
+| **Delivery** | Unzip this package **or** clone from GitHub. **No hosted deploy.** No `.exe`. **No Docker** in this MVP. |
 | **Samples** | **Included** — Quick demos + playbook PDFs + golden `playbook_config.json` ship in the repo. |
 | **First run** | Offline by default: Fake LLM + optional fast hash embeddings. No API keys. |
 | **Accounts** | Demo users after `bootstrap_demo_users` (passwords are for the demo only). |
@@ -22,6 +37,8 @@ Full rationale: [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md).
 ### Evaluator path (~10 minutes)
 
 ```bash
+# From zip: unzip RedlineGuard-*.zip && cd RedlineGuard
+# Or from GitHub:
 git clone https://github.com/New-Sheep/RedlineGuard.git
 cd RedlineGuard
 
@@ -32,7 +49,7 @@ python -m venv .venv
 
 pip install -r requirements.txt
 copy .env.example .env
-# In .env (recommended for first try): FAKE_LLM=1 and FAKE_EMBED=1
+# .env.example already sets FAKE_LLM=1 and FAKE_EMBED=1 (offline, no keys)
 
 python manage.py migrate
 python manage.py bootstrap_demo_users
