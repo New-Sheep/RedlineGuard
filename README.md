@@ -1,222 +1,362 @@
 # RedlineGuard
 
-Take-home prototype for PortSwigger’s AI Pioneer brief: **playbook-grounded** first-pass contract review for in-house legal — with generative AI drafts, MiniLM decision memory, lite security.
+Take-home prototype for PortSwigger’s **AI Pioneer** brief: playbook-grounded first-pass contract review for in-house legal, with generative AI drafts, MiniLM decision memory, and lite security.
 
-**One-line promise:** Set up playbook (if needed) → upload → check playbook → flag/counter → decide → remember.
+**One-line promise:** Set up playbook (if needed) → upload → check playbook → flag / counter → decide → remember.
 
 **Principle:** AI proposes. The playbook decides. The lawyer confirms.
 
----
-
-## What’s in this zip / clone
-
-| Included | Not included (by design) |
-|----------|---------------------------|
-| Full Django app + templates + static CSS | `.venv`, `.env`, **API keys** (you add yours) |
-| Sample contracts, playbook PDFs, golden `playbook_config.json` | Runtime DB (`db.sqlite3`), Chroma under `data/vector_memory/` |
-| `.env.example`, this README, [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) | Docker / hosted URL / Windows `.exe` |
-| Wiring for **NVIDIA / Ollama / other OpenAI-compatible LLMs** + **MiniLM** embeddings | Production hardening claims |
-
-**Requirements:** Python **3.11+**, plus **one** LLM backend (NVIDIA API key *or* local Ollama). First run may download MiniLM once (~90 MB). Prefer unzip or clone; run locally only.
-
 **Same tree on GitHub:** https://github.com/New-Sheep/RedlineGuard
 
+Printable checklist: [`docs/14-EVALUATOR-GUIDE.md`](docs/14-EVALUATOR-GUIDE.md) · Delivery decisions: [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md)
+
 ---
 
-## How PortSwigger should try this
+## Start here (about 10–20 minutes)
 
-| | |
-|---|---|
-| **Delivery** | Unzip this package **or** clone from GitHub. **No hosted deploy.** |
-| **Intended AI path** | Real LLM (`FAKE_LLM=0`) + MiniLM memory (`FAKE_EMBED=0`). This is the product. |
-| **What you bring** | An **NVIDIA API key** (recommended) *or* **Ollama** with a pulled instruct model. Optional `HF_TOKEN` if MiniLM download is rate-limited. |
-| **Samples** | Quick demos + playbook PDFs + golden `playbook_config.json` in the repo. |
-| **Accounts** | Demo users after `bootstrap_demo_users`. |
+Do these in order. Details for each step are below.
 
-Full rationale: [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md).
+1. Install **Python 3.11+** (and pip).
+2. Unzip this package **or** `git clone` (identical tree).
+3. Create a virtualenv and `pip install -r requirements.txt`.
+4. Copy `.env.example` → `.env` and set your **NVIDIA API key** (or switch to Ollama).
+5. Run: `migrate` → `bootstrap_demo_users` → `seed_precedents` → `check_llm --draft` → `runserver`.
+6. Open http://127.0.0.1:8000/ and sign in as **`lawyer` / `lawyer-demo-2026`**.
+7. **Upload** → Quick demo **Sample with issues** → Review → Accept → open **Memory**.
 
-### Evaluator path — intended (real generative AI)
+Intended path uses a **real LLM** (`FAKE_LLM=0`) and **MiniLM** embeddings (`FAKE_EMBED=0`). That is the product. Fake fixtures are fallback only.
+
+---
+
+## Prerequisites
+
+| Need | Notes |
+|------|--------|
+| Python **3.11+** | `python --version` |
+| pip / venv | Comes with most Python installs |
+| **One** LLM backend | **NVIDIA API key** from [build.nvidia.com](https://build.nvidia.com) (recommended), **or** local [Ollama](https://ollama.com) with an instruct model pulled |
+| Optional `HF_TOKEN` | Hugging Face token if MiniLM download is rate-limited |
+| Network (first run) | MiniLM ~90 MB once; LLM calls to NVIDIA (unless Ollama-only) |
+
+No Docker. No hosted URL. No API keys are shipped in the zip (you add yours in `.env`).
+
+---
+
+## 1. Get the code
+
+**From zip**
 
 ```bash
-# From zip: unzip … && cd RedlineGuard
-# Or: git clone https://github.com/New-Sheep/RedlineGuard.git && cd RedlineGuard
-
-python -m venv .venv
-# Windows:  .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-
-pip install -r requirements.txt
-copy .env.example .env          # Windows; or: cp .env.example .env
+# Unzip RedlineGuard-PortSwigger-FINAL.zip, then:
+cd RedlineGuard
 ```
 
-Edit `.env` (required for the intended demo):
+**From GitHub**
+
+```bash
+git clone https://github.com/New-Sheep/RedlineGuard.git
+cd RedlineGuard
+```
+
+Both give the same tree (samples, playbooks, docs, Django app).
+
+---
+
+## 2. Create a virtualenv and install dependencies
+
+```bash
+python -m venv .venv
+
+# Windows:
+.venv\Scripts\activate
+
+# macOS / Linux:
+# source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+**What `requirements.txt` installs (high level)**
+
+| Package | Why |
+|---------|-----|
+| Django 5.x | Web app, sessions, ORM |
+| pdfplumber / pypdf / python-docx | Extract PDF / DOCX / TXT |
+| pydantic | Structured LLM JSON |
+| chromadb | Decision memory (vector store) |
+| sentence-transformers | MiniLM embeddings when `FAKE_EMBED=0` |
+| python-dotenv | Load `.env` |
+
+First `pip install` often takes **2–5 minutes** (longer if PyTorch wheels for sentence-transformers are pulled).
+
+---
+
+## 3. Configure `.env`
+
+```bash
+# Windows:
+copy .env.example .env
+
+# macOS / Linux:
+# cp .env.example .env
+```
+
+Open `.env` and **must-fill** at least `NVIDIA_API_KEY` for the intended demo (or switch to Ollama; see below).
+
+### Environment variables
+
+| Variable | Required? | Example | Meaning |
+|----------|-----------|---------|---------|
+| `FAKE_LLM` | Yes (intended) | `0` | `0` = real generative LLM. `1` = canned draft fixtures only. |
+| `FAKE_EMBED` | Yes (intended) | `0` | `0` = MiniLM for semantic memory. `1` = fast hash stubs (no download). |
+| `LLM_PROVIDER` | Yes | `nvidia` | Backend: `nvidia`, `ollama`, `auto`, `deepseek`, `moonshot`, or `http`. |
+| `NVIDIA_API_KEY` | If nvidia / auto | *(your key)* | From build.nvidia.com. **Leave empty only if using Ollama.** |
+| `NVIDIA_MODEL` | If nvidia | `meta/llama-3.1-8b-instruct` | Chat model id on NVIDIA. |
+| `HF_TOKEN` | Optional | *(your token)* | Helps if MiniLM download from Hugging Face is rate-limited. |
+| `OLLAMA_HOST` | If ollama | `http://127.0.0.1:11434` | Local Ollama server. |
+| `OLLAMA_MODEL` | If ollama | `qwen2.5:7b-instruct` | Model you already `ollama pull`’d. |
+| `OLLAMA_TIMEOUT_S` | Optional | `120` | Seconds before Ollama call times out. |
+| `LLM_JUDGE` | Optional | `1` | L2 closed-book judge on flags when `FAKE_LLM=0`. |
+| `SEMANTIC_COMPARE` | Leave default | `1` | L1 semantic playbook matching. |
+| `REQUIRE_AUTH` | Leave default | `1` | Session login required (demo). |
+| `CHROMA_COLLECTION` | Leave default | `django_decisions_v2` | Memory collection name. |
+| `MEMORY_MAX_DISTANCE` | Leave default | `0.45` | How close a precedent must be to reuse. |
+
+**Minimal intended `.env` (NVIDIA):**
 
 ```env
 FAKE_LLM=0
 FAKE_EMBED=0
 LLM_PROVIDER=nvidia
-NVIDIA_API_KEY=your_key_here
+NVIDIA_API_KEY=paste_your_key_here
 NVIDIA_MODEL=meta/llama-3.1-8b-instruct
-# Optional if MiniLM download fails: HF_TOKEN=...
+SEMANTIC_COMPARE=1
 ```
 
-**Ollama instead of NVIDIA:** set `LLM_PROVIDER=ollama`, install [Ollama](https://ollama.com), `ollama pull qwen2.5:7b-instruct` (or your `OLLAMA_MODEL`), leave cloud keys empty.
+**Ollama instead of NVIDIA:** set `LLM_PROVIDER=ollama`, install Ollama, run `ollama pull qwen2.5:7b-instruct` (or your `OLLAMA_MODEL`), leave `NVIDIA_API_KEY` empty. Optionally run `python manage.py check_ollama`.
+
+Full commented template: [`.env.example`](.env.example).
+
+---
+
+## 4. Database, demo users, LLM smoke, server
+
+Run from the project root (venv activated):
 
 ```bash
 python manage.py migrate
 python manage.py bootstrap_demo_users
 python manage.py seed_precedents
-python manage.py check_llm --draft    # smoke the real LLM
+python manage.py check_llm --draft
 python manage.py runserver
 ```
 
-First `runserver` with `FAKE_EMBED=0` warms **MiniLM** (one-time download). Then open http://127.0.0.1:8000/ → sign in **`lawyer` / `lawyer-demo-2026`** → **Upload** → Quick demos or your own PDF/DOCX/TXT.
+### What each command does
 
-Admin: **`admin` / `admin-demo-2026`**.
+| Command | Why you run it |
+|---------|----------------|
+| `migrate` | Creates local SQLite tables (`db.sqlite3`). Safe to re-run. |
+| `bootstrap_demo_users` | Creates demo accounts (lawyer + admin). Idempotent. |
+| `seed_precedents` | Loads a few memory precedents so Journey B works before your first Accept. Optional but recommended. |
+| `check_llm --draft` | Calls your real LLM once. **Do this before the UI** so you know the key/model works. |
+| `runserver` | Serves the app at http://127.0.0.1:8000/ |
 
-### What the real AI path unlocks
+---
 
-With `FAKE_LLM=0`: playbook propose from PDF, suggested counters / rewrite co-pilot, L2 judge on flags, memory explain, decision brief, plain-English gloss, scoped ask. With `FAKE_EMBED=0`: proper semantic decision memory (not hash stubs).
+## 5. Login and auth
 
-### Fallback only (no API key / no Ollama)
+Open http://127.0.0.1:8000/ (you will be sent to login if needed).
 
-If you cannot reach a model, set `FAKE_LLM=1` and `FAKE_EMBED=1`. The UI and playbook/security flows still run; **drafts are canned fixtures** — fine for smoke tests, **not** the AI Pioneer story.
+| Username | Password | Role | Use for |
+|----------|----------|------|---------|
+| **`lawyer`** | **`lawyer-demo-2026`** | Lawyer | Primary demo: upload, review, Accept / Edit / Reject |
+| **`admin`** | **`admin-demo-2026`** | Admin | Lab resets at `/lab/` (type `RESET` to confirm) |
+
+- Auth is **session-based** (Django login). Default `REQUIRE_AUTH=1`.
+- These passwords are **demo-only**. Do not reuse elsewhere.
+- After first lawyer login you may see a short onboarding wizard: complete it or skip as offered.
+
+---
+
+## Expected cold-start times
+
+Honest ranges on a normal laptop / office network:
+
+| Step | Typical time |
+|------|----------------|
+| `pip install -r requirements.txt` | ~2–5 min (longer if torch / sentence-transformers wheels download) |
+| First MiniLM load (`FAKE_EMBED=0`) | ~1–5 min once (~90 MB); later starts reuse the cache |
+| `check_llm --draft` | ~10–60 s (NVIDIA latency) |
+| First contract analyze (live LLM) | ~30–90 s typical |
+| Playbook PDF propose (live LLM) | Can be longer (tens of seconds to a couple of minutes) |
+| Later analyzes (models warmed) | Usually faster |
+
+If the first `runserver` looks “stuck,” check the terminal: MiniLM may still be downloading.
+
+---
+
+## 5-minute demo path (after login)
+
+1. Go to **Upload**.
+2. Click **Sample with issues** (or **Short NDA**).
+3. Wait on **Processing** (reading → security → playbook → draft).
+4. On **Review**, open a flag, open rewrite, **Accept** (or Edit / Reject).
+5. Open **Memory** (`/memory/`) and confirm the decision appears.
+6. **Journey C:** click **Unsafe sample** → expect a **security halt** (not a normal review).
+7. **Journey E:** `/playbook/` → Import playbook PDF (e.g. Sample Playbook1) → edit proposed rules → **Activate**.
+
+Also try your own PDF / DOCX / TXT. Prefer text-based PDFs (scanned image PDFs usually fail with a clear message).
+
+---
+
+## Architecture (short)
+
+```mermaid
+flowchart LR
+  upload[Upload_or_sample]
+  extract[Extract_text]
+  security[Security_gate]
+  compare[Playbook_L0_L1_L2]
+  draft[LLM_drafts]
+  review[Lawyer_Review]
+  memory[Chroma_memory]
+
+  upload --> extract --> security
+  security -->|halt| alert[Security_alert]
+  security -->|ok| compare --> draft --> review
+  review -->|Accept_Edit_Reject| memory
+```
+
+| App package | Responsibility |
+|-------------|----------------|
+| `apps/contracts` | Upload, extract, processing status |
+| `apps/security` | Sanitize, injection detect, adjudicate, halt |
+| `apps/review` | Playbook compare, drafts, rewrite UI, playbook import |
+| `apps/decisions` | Accept / Edit / Reject history, thin JSON APIs |
+| `apps/learning` | Chroma memory, precedents, Unlearn |
+| `apps/accounts` | Session auth, roles, onboarding, lab |
+| `apps/core` | LLM clients, embeddings, shared helpers |
+
+**Stack:** Django templates + SQLite + local Chroma. No React. LLM via NVIDIA / Ollama / other OpenAI-compatible HTTP.
+
+Deeper map: [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) · backend plan: [`docs/05-DJANGO-BACKEND-PLAN.md`](docs/05-DJANGO-BACKEND-PLAN.md) · compare layers: [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md)
+
+---
+
+## APIs (thin JSON)
+
+Session auth required when `REQUIRE_AUTH=1`. Mutating calls need CSRF.
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/contracts/` | List contracts |
+| GET | `/api/findings/?contract_id=` | Findings for a contract |
+| GET / PATCH / DELETE | `/api/decisions/<uuid>/` | Decision detail; DELETE = undo |
+| GET | `/api/memory/` | Precedents |
+| DELETE | `/api/memory/<id>/` | Unlearn |
+| GET | `/api/playbook/` | Active playbook |
+| GET | `/api/audit/` | Audit log (append-only) |
+
+Full table: [`docs/11-LAWYER-API.md`](docs/11-LAWYER-API.md)
+
+Main HTML routes: `/login/`, `/` (upload), `/contracts/`, `/history/`, `/memory/`, `/playbook/`, `/audit/`, `/help/`, `/trust/`, `/lab/`.
+
+---
+
+## Design
+
+UI mockups (Upload → Processing → Review → Rewrite): [`designs/README.md`](designs/README.md). Shipped UI is Django SSR with the same flow; Stitch folders are visual reference only.
+
+---
+
+## Fallback only (no API key / no Ollama)
+
+If you cannot reach a model, set in `.env`:
+
+```env
+FAKE_LLM=1
+FAKE_EMBED=1
+```
+
+The UI, playbook matching, and security halt still run; **drafts are canned fixtures**. Fine for smoke tests. **Not** the AI Pioneer story. Prefer fixing `check_llm --draft` instead.
+
+---
+
+## Troubleshooting
+
+| Symptom | What to try |
+|---------|-------------|
+| `check_llm` fails / auth error | Confirm `NVIDIA_API_KEY` in `.env`, `FAKE_LLM=0`, `LLM_PROVIDER=nvidia`. Restart shell after editing `.env`. |
+| MiniLM download fails | Set `HF_TOKEN`, or temporarily `FAKE_EMBED=1` to unblock UI (memory quality drops). |
+| Port 8000 in use | `python manage.py runserver 8001` |
+| Scanned PDF fails extract | Use Quick demos or a text-based PDF / DOCX / TXT. |
+| Drafts look like stubs | You are still on Fake, or LLM failed open. Re-run `check_llm --draft`. |
+| Unsafe sample missing | File should be `data/scratch_corpus/injection_hostile.txt` on the full tree / GitHub. |
+
+---
+
+## What’s in this package
+
+| Included | Not included |
+|----------|--------------|
+| Full Django app, templates, static CSS | `.venv`, `.env` with secrets |
+| Sample contracts, playbook PDFs, golden `playbook_config.json` | Runtime `db.sqlite3`, Chroma under `data/vector_memory/` |
+| Hostile / injection demos (Journey C) | Docker / `.exe` / hosted deploy |
+| Docs + designs | Production compliance claims |
 
 ---
 
 ## Approach (for reviewers)
 
-| Idea | What it means here |
-|------|--------------------|
-| Playbook compiler | Flags cite company rules in `playbook_config.json` — not generic “AI vibes” |
-| Setup co-pilot | PDF import **or** starter from past contracts proposes rules via LLM; lawyer **Activates** |
-| Decision memory | Clause-excerpt Chroma + MiniLM; Memory page; provenance; Reject=Avoid |
-| Override | “Override & accept as-is” appends to overrides — **never** rewrites the golden playbook |
-| Security | Uploads untrusted; sanitize + injection halt; adjudicator; **25 MB** cap |
-| Ingest | PDF / **DOCX** / TXT |
-| Live progress | Background analyze; Processing page shows steps |
-| Generative drafts | Real NVIDIA/Ollama/etc. when `FAKE_LLM=0` |
-| UI | Django templates — no React dependency |
+| Idea | Meaning here |
+|------|----------------|
+| Playbook compiler | Flags cite company rules in `playbook_config.json` |
+| Setup co-pilot | PDF import or starter from past contracts; lawyer Activates |
+| Decision memory | Clause-excerpt Chroma + MiniLM; provenance; Reject = Avoid |
+| Override | Append-only overrides; never silently rewrite the golden playbook |
+| Security | Sanitize + injection halt + adjudicator; upload size cap |
+| Generative drafts | Real NVIDIA / Ollama when `FAKE_LLM=0` |
 
-## Start here (read in order)
+---
 
-1. **[Handoff](docs/13-HANDOFF.md)** — delivery + AI setup  
-2. **[What are we building?](docs/00-WHAT-WE-ARE-BUILDING.md)** — plain English  
-3. **[Product map](docs/06-PRODUCT-MAP.md)** — flows, statuses, decisions, DB  
-4. **[MVP PRD](docs/01-PRD-MVP.md)** — Must / Should / Could / Won’t  
-5. **[MVP audit checkpoint](docs/07-MVP-AUDIT-CHECKPOINT.md)** — shipped vs PRD  
-6. **[Compare algorithm audit](docs/08-COMPARE-ALGORITHM-AUDIT.md)** — L0+L1+L2  
-7. **[Lawyer wishlist](docs/10-LAWYER-WISHLIST-SPRINTS.md)** · **[Lawyer API](docs/11-LAWYER-API.md)**  
-8. **[MVP Implementation](docs/02-MVP-IMPLEMENTATION.md)** — stack, modules, build order  
-9. **[Scratch foundation](docs/04-SCRATCH-FOUNDATION.md)** — CLI lab that seeded Django  
-10. **[Django backend plan](docs/05-DJANGO-BACKEND-PLAN.md)** — modular monolith  
-11. **[Stitch designs](designs/README.md)** — four screens (ignore Team/Archive chrome)  
+## Deeper docs (after you can run)
 
-## Demo samples (use these first)
+1. [`docs/14-EVALUATOR-GUIDE.md`](docs/14-EVALUATOR-GUIDE.md) — one-page checklist  
+2. [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) — why local / zip / no Docker  
+3. [`docs/00-WHAT-WE-ARE-BUILDING.md`](docs/00-WHAT-WE-ARE-BUILDING.md) — product in plain English  
+4. [`docs/01-PRD-MVP.md`](docs/01-PRD-MVP.md) — Must / Should / Won’t  
+5. [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) — flows and statuses  
+6. [`docs/07-MVP-AUDIT-CHECKPOINT.md`](docs/07-MVP-AUDIT-CHECKPOINT.md) — shipped vs PRD  
+7. [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md) — L0 + L1 + L2  
 
-Committed under `data/scratch_corpus/`. Also exposed as **Quick demos** on Upload.
+Vision-only (not how to run): `docs/CLAUDE_PORTSWIGGER.md`
 
-| Sample | Journey |
-|--------|---------|
-| **Demo — clean contract** / Sample with issues | A — Review → rewrite → Accept |
-| **Demo — short form** / Short NDA | A — quicker path |
-| **Demo — hostile / injection** / Hostile sample | C — Security alert (on full GitHub tree) |
+**Conflict rule:** README + handoff + PRD win over vision docs.
 
-Playbook PDFs: `data/playbook_corpus/`. **Text-based PDFs only** for uploads; scanned image PDFs fail with a clear message — use a Quick demo first.
+---
 
-## LLM providers (detail)
+## Smoke checklist
 
-| `LLM_PROVIDER` | Backend |
-|----------------|---------|
-| `nvidia` (recommended) | NVIDIA NIM / build.nvidia.com key |
-| `auto` | First of NVIDIA → DeepSeek → Moonshot keys, else Ollama |
-| `ollama` | Local Ollama (`OLLAMA_*`) |
-| `deepseek` / `moonshot` / `http` | Other OpenAI-compatible HTTP |
-
-Smoke: `python manage.py check_llm --draft`. If the live model is down or returns bad JSON, some draft paths may fall back to fixtures — fix keys/network rather than staying on Fake for the judged demo.
-
-**L2 judge:** on when `FAKE_LLM=0`. Set `LLM_JUDGE=0` to skip.
-
-**Security:** CSRF on mutating APIs; session roles; admin lab `/lab/`; audit append-only. Explainability: `/trust/`. Evals: `python -m evals.runners.run_all`.
-
-### Contracts
-
-- Analyze → security → playbook compare → draft → **Review** (document + flags)
-- **Rewrite:** Accept / Edit / Reject / **Override & accept as-is**
-- **History** at `/history/` · **Memory** at `/memory/` (precedents, Unlearn, overrides)
-
-### Playbook (no JSON for lawyers)
-
-1. `/playbook/` — **Active company playbook** (or empty-state CTAs)  
-2. **Import playbook PDF** (`/playbook/import/`) → Sample Playbook1.pdf → edit → **Activate**  
-3. **Starter from past contracts** (`/playbook/starter/`) → pick/upload 3–5 NDAs → Activate  
-4. Poisoned Sample Playbook2 / hostile starter text → **halted**, cannot Activate  
-5. Proposed rules always show **Proposed — not active yet** until Activate  
-
-### Smoke checklist (zip / Loom)
-
-- [ ] Journey **A:** demo clean sample → flags cite rules → Accept (with **live** LLM drafts)  
-- [ ] Journey **B:** seed precedents *or* prior Accept → memory draft / Override  
-- [ ] Journey **C:** hostile sample → Security alert  
-- [ ] Journey **E1:** playbook PDF import → Activate (LLM propose)  
-- [ ] Journey **E2:** `/playbook/starter/` with 3 samples → Activate  
-- [ ] Confirm UI badge / drafts are **not** stuck on Fake fixtures  
-
-### Governance cheat-sheet
-
-| Action | Writes |
-|--------|--------|
-| Activate playbook | `data/playbook_config.json` (backup `.bak`) |
-| Override & accept as-is | `data/playbook_overrides.json` (append-only) |
-| Accept / Edit | ORM Decision + Chroma (`django_decisions_v2`, clause excerpt) |
-| Reject | ORM Decision + Chroma Avoid signal |
-| Unlearn | Deletes Chroma id; `Decision.memory_active=False` |
-
-### Tests
-
-```bash
-# Fast offline tests (hash embeddings — also auto when running manage.py test)
-set FAKE_EMBED=1
-python manage.py test apps.contracts apps.review apps.security apps.decisions apps.learning
-```
-
-## 5-minute Loom beat sheet
-
-1. **A:** Upload `Demo — clean contract` → show 2+ flags citing rules → Review rewrite → Accept → **Memory**  
-2. **B:** Re-analyze similar text → Rewrite shows **provenance** **or** Override one rule → that rule no longer flags. Tip: `python manage.py seed_precedents` for a cold start.  
-3. **C:** Upload `Demo — hostile / injection` → Security alert  
-4. **E:** Empty playbook CTA → **Import PDF** *or* **Starter from past contracts** → **Proposed — not active yet** → Activate  
-5. **(Optional):** Reject → Avoid on Memory; Unlearn; `/api/memory/`  
-
-Record the Loom on the **intended** path (`FAKE_LLM=0`, `FAKE_EMBED=0`) so reviewers see generative AI, not fixtures.
-
-## Smoke evals
-
-```bash
-set FAKE_LLM=1
-python -m evals.runners.run_smoke
-```
-
-Writes `evals/reports/latest.json`. Typical offline result: **4/4** (hard injection hold, ambiguous peer proceed, California flag, clean UK).
-
-## Security posture (honest)
-
-- Heuristic injection detection + sanitize; halt on high-confidence hits  
-- Contract path treats Gemini chat-export chrome as hostile; playbook import does not (real playbooks often come from Gemini)  
-- Prototype only — not production privacy/compliance; no secrets in git  
-- Intended path: MiniLM locally + LLM over HTTPS to your chosen provider (or fully local Ollama)  
+- [ ] `check_llm --draft` succeeds with live model  
+- [ ] Journey **A:** Sample with issues → flags cite rules → Accept → Memory  
+- [ ] Journey **B:** seed precedents or prior Accept → memory / Override  
+- [ ] Journey **C:** Unsafe sample → Security alert  
+- [ ] Journey **E:** playbook PDF import → Activate  
+- [ ] UI drafts are **not** stuck on Fake fixtures  
 
 ## Limitations
 
 - Not legal advice  
-- Playbook matching is layered (regex + semantic + optional LLM judge)  
-- Overrides suppress whole rules (coarse)  
-- Local SQLite + local Chroma  
-- Not a production deploy — local demo only  
-- Reviewers must supply their own LLM access (key or Ollama); keys are never shipped  
+- Prototype only (local SQLite + Chroma)  
+- Reviewers supply their own LLM access; keys never ship in git  
+- Heuristic + layered compare; not a full production legal platform  
 
-## Reference only (not MVP authority)
+## Tests / evals (optional)
 
-- `docs/03-SCRATCH-DRYRUN.md`, `docs/gemini_brainstorm.md`, `docs/CLAUDE_PORTSWIGGER.md`
+```bash
+set FAKE_EMBED=1
+python manage.py test apps.contracts apps.review apps.security apps.decisions apps.learning
 
-**Conflict rule:** PRD + README + [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) win over vision docs.
+set FAKE_LLM=1
+python -m evals.runners.run_smoke
+```

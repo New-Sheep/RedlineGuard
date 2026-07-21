@@ -1,7 +1,10 @@
 # Handoff — how PortSwigger tries RedlineGuard
 
 **Audience:** take-home reviewers and anyone packaging a zip / GitHub clone.  
-**Authority:** this file + [`README.md`](../README.md). Vision docs that mention Docker or cloud deploy are **aspirational only**.
+**Authority:** root [`README.md`](../README.md) for **how to run**. This file for **what we ship and why**.  
+**One-pager checklist:** [`14-EVALUATOR-GUIDE.md`](14-EVALUATOR-GUIDE.md).
+
+Vision docs that mention Docker or cloud deploy are **aspirational only**.
 
 ---
 
@@ -9,13 +12,37 @@
 
 | Question | Answer |
 |----------|--------|
-| Deploy to a public URL? | **No.** Brief is local try + Loom/video. No Railway/Vercel/OCI hosting for this exercise. |
-| Windows `.exe` installer? | **No.** Wrong fit for a Django prototype; security engineers already have Python. |
-| Docker Compose? | **Not shipped.** Optional later; do not claim `docker compose up` until a real compose file exists. |
-| How do they get the code? | **Zip of the same tree** (submission) or **GitHub clone**. |
-| Sample / Quick-demo docs? | **Yes — committed.** Reviewers must not hunt for external NDAs. |
-| **Intended AI path** | **Real LLM + MiniLM.** `FAKE_LLM=0`, `FAKE_EMBED=0`. Reviewer brings **NVIDIA API key** *or* **Ollama**. |
-| Fake fixtures? | **Fallback only** when no model is available — not the judged demo story. |
+| Deploy to a public URL? | **No.** Local try + Loom/video. |
+| Windows `.exe` / Docker? | **No.** Python venv is the supported path. |
+| How do they get the code? | **Zip** (same tree) or **GitHub clone**. |
+| Sample docs? | **Yes**, committed under `data/`. |
+| **Intended AI path** | **Real LLM + MiniLM:** `FAKE_LLM=0`, `FAKE_EMBED=0`. Reviewer brings **NVIDIA API key** *or* **Ollama**. |
+| Fake fixtures? | **Fallback only** when no model is available. |
+| Secrets in zip/git? | **Never.** Copy `.env.example` → `.env` and fill keys locally. |
+
+---
+
+## Login (after `bootstrap_demo_users`)
+
+| Username | Password | Role |
+|----------|----------|------|
+| `lawyer` | `lawyer-demo-2026` | Primary demo |
+| `admin` | `admin-demo-2026` | Lab at `/lab/` |
+
+Demo-only. Session auth on by default (`REQUIRE_AUTH=1`).
+
+---
+
+## Expected cold start
+
+| Step | Typical |
+|------|---------|
+| `pip install -r requirements.txt` | ~2–5 min |
+| First MiniLM download (`FAKE_EMBED=0`) | ~1–5 min once |
+| `check_llm --draft` | ~10–60 s |
+| First live analyze | ~30–90 s |
+
+Full command meanings: [`README.md`](../README.md).
 
 ---
 
@@ -23,50 +50,31 @@
 
 | Asset | Path | Why |
 |-------|------|-----|
-| Quick demos (Upload buttons + dropdown) | `data/scratch_corpus/demo_*.txt`, `injection_hostile.txt` | Journeys A and C in one click |
-| Golden playbook | `data/playbook_config.json` | Flags cite real company rules out of the box |
-| Playbook import samples | `data/playbook_corpus/` | Journey E1 (Activate flow) |
-| Hostile / injection samples | `data/malicious_corpus/` + hostile TXT | Journey C / security story |
-| Precedent seed (optional) | `data/precedents/` + `seed_precedents` | Journey B without a prior Accept |
-| Demo accounts | `bootstrap_demo_users` | `lawyer` / `admin` for session auth demos |
-| Env template | `.env.example` | Copy to `.env`, then **add your LLM key** |
+| Quick demos | `data/scratch_corpus/demo_*.txt`, `injection_hostile.txt` | Journeys A and C |
+| Golden playbook | `data/playbook_config.json` | Flags cite real rules |
+| Playbook import samples | `data/playbook_corpus/` | Journey E1 |
+| Hostile / injection samples | `data/malicious_corpus/` + hostile TXT | Journey C |
+| Precedent seed | `data/precedents/` + `seed_precedents` | Journey B cold start |
+| Demo accounts | `bootstrap_demo_users` | `lawyer` / `admin` |
+| Env template | `.env.example` | Copy to `.env`, add LLM key |
 
-Runtime-only (gitignored, recreated on first run): `db.sqlite3`, `media/`, Chroma under `data/vector_memory/`, `.env`, MiniLM cache.
+Runtime-only (gitignored): `db.sqlite3`, `media/`, Chroma under `data/vector_memory/`, `.env`, MiniLM cache.
 
 ---
 
-## Evaluator path — intended (real generative AI)
+## Evaluator path (summary)
 
-Requires **Python 3.11+**, Git (or unzip), and **one** of:
-
-- **NVIDIA API key** from [build.nvidia.com](https://build.nvidia.com) (recommended), or  
-- **Ollama** installed locally with an instruct model pulled (e.g. `qwen2.5:7b-instruct`)
+Prefer the numbered steps in [`README.md`](../README.md). Short form:
 
 ```bash
-git clone https://github.com/New-Sheep/RedlineGuard.git
+# unzip or: git clone https://github.com/New-Sheep/RedlineGuard.git
 cd RedlineGuard
-
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
-
 pip install -r requirements.txt
-copy .env.example .env          # Windows; or: cp .env.example .env
-```
-
-Edit `.env`:
-
-```env
-FAKE_LLM=0
-FAKE_EMBED=0
-LLM_PROVIDER=nvidia
-NVIDIA_API_KEY=paste_your_key
-NVIDIA_MODEL=meta/llama-3.1-8b-instruct
-```
-
-Optional: `HF_TOKEN=…` if the MiniLM download from Hugging Face is rate-limited.
-
-```bash
+copy .env.example .env
+# Edit .env: FAKE_LLM=0 FAKE_EMBED=0 LLM_PROVIDER=nvidia NVIDIA_API_KEY=...
 python manage.py migrate
 python manage.py bootstrap_demo_users
 python manage.py seed_precedents
@@ -74,58 +82,48 @@ python manage.py check_llm --draft
 python manage.py runserver
 ```
 
-1. Open http://127.0.0.1:8000/ → sign in **`lawyer` / `lawyer-demo-2026`**
-2. Complete or skip onboarding
-3. **Upload** → **Sample with issues** (or Short NDA / Hostile sample)
-4. Walk Review → Rewrite → Accept; confirm drafts look like live model output, not stub text
-5. Try Hostile for the security halt; try playbook PDF import for LLM propose
+Then http://127.0.0.1:8000/ → `lawyer` / `lawyer-demo-2026` → Upload Quick demos.
 
-Admin lab (resets): `admin` / `admin-demo-2026` at `/lab/`.
-
-### Fallback (no model access)
-
-Set `FAKE_LLM=1` and `FAKE_EMBED=1`. UI/security/playbook still work; **drafts are fixtures**. Use only if you cannot reach NVIDIA or Ollama.
+**Fallback:** `FAKE_LLM=1` and `FAKE_EMBED=1` if no model access (fixtures only).
 
 ---
 
 ## Why not Docker or an installer?
 
-- **PortSwigger reviewers** are engineers: clone + venv + their own LLM access is normal.
-- Docker would need a maintained image and migrate-on-start — nice later, not required for this take-home.
-- An `.exe` would freeze a large Python tree and hide how the app runs — poor signal for this brief.
+PortSwigger reviewers are engineers: clone + venv + their own LLM access is normal. Docker and `.exe` would hide how the prototype runs and are out of scope for this take-home.
 
 ---
 
 ## What we do *not* put in git
 
-- Secrets, `.env` with API keys, OCI wallets  
+- Secrets, `.env` with API keys  
 - Local SQLite / Chroma / uploaded `media/`  
-- A privately mutated playbook that breaks the demo samples  
-
-Before push or zip: confirm Quick demos still flag against `data/playbook_config.json`.
+- A privately mutated playbook that breaks demo samples  
 
 ---
 
-## Loom / smoke (same as README)
+## Loom / smoke
 
 Record on the **intended** path (`FAKE_LLM=0`, `FAKE_EMBED=0`):
 
-- **A:** Demo clean → flags cite rules → live draft → Accept → Memory  
-- **B:** Re-analyze or `seed_precedents` → provenance / Override  
+- **A:** Demo clean → flags → live draft → Accept → Memory  
+- **B:** seed precedents / prior Accept → provenance / Override  
 - **C:** Hostile sample → Security alert  
 - **E:** Playbook import or starter → Activate  
 
 ---
 
-## Doc map for outsiders
+## Doc map
 
 | Read first | Purpose |
 |------------|---------|
-| [`README.md`](../README.md) | Run + demo journeys |
+| [`README.md`](../README.md) | Run + env + auth + architecture |
+| [`14-EVALUATOR-GUIDE.md`](14-EVALUATOR-GUIDE.md) | One-page checklist |
 | This file | Delivery decisions |
-| [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) | Product in plain English |
-| [`01-PRD-MVP.md`](01-PRD-MVP.md) | Scope (Must / Won’t) |
-| [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) | Flows and statuses |
-| [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) | Vision only — **not** how to run |
+| [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) | Product plain English |
+| [`01-PRD-MVP.md`](01-PRD-MVP.md) | Scope |
+| [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) | Flows |
+| [`11-LAWYER-API.md`](11-LAWYER-API.md) | JSON APIs |
+| [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) | Vision only |
 
 **Conflict rule:** PRD + README + this handoff beat vision docs.

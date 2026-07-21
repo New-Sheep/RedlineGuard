@@ -13,7 +13,9 @@
     {% csrf_token %}
     <button class="btn btn-sm" type="submit" name="sample_key" value="demo_clean_flags.txt">Sample with issues</button>
     <button class="btn btn-ghost btn-sm" type="submit" name="sample_key" value="demo_short_nda.txt">Short NDA</button>
+    {% if show_unsafe_sample %}
     <button class="btn btn-ghost btn-sm" type="submit" name="sample_key" value="injection_hostile.txt">Unsafe sample</button>
+    {% endif %}
   </form>
 </div>
 

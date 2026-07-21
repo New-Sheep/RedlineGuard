@@ -121,20 +121,36 @@ class ContractListView(View):
 class UploadView(View):
     template_name = "contracts/upload.html"
 
+    @staticmethod
+    def _upload_context(form: ContractIngestForm | None = None) -> dict:
+        from pathlib import Path
+
+        from django.conf import settings
+
+        hostile = Path(settings.SCRATCH_CORPUS_DIR) / "injection_hostile.txt"
+        return {
+            "form": form or ContractIngestForm(),
+            "show_unsafe_sample": hostile.is_file(),
+        }
+
     def get(self, request):
-        return render(request, self.template_name, {"form": ContractIngestForm()})
+        return render(request, self.template_name, self._upload_context())
 
     def post(self, request):
         form = ContractIngestForm(request.POST, request.FILES)
         if not form.is_valid():
-            return render(request, self.template_name, {"form": form}, status=400)
+            return render(
+                request, self.template_name, self._upload_context(form), status=400
+            )
 
         from apps.core.rate_limit import check_analyze_rate
 
         ok, err = check_analyze_rate(request.session)
         if not ok:
             messages.error(request, err)
-            return render(request, self.template_name, {"form": form}, status=429)
+            return render(
+                request, self.template_name, self._upload_context(form), status=429
+            )
 
         sample_key = (form.cleaned_data.get("sample_key") or "").strip()
         upload = form.cleaned_data.get("upload")
