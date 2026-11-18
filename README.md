@@ -1,8 +1,8 @@
 # RedlineGuard
 
-**A first-pass helper for in-house lawyers reviewing routine contracts.**
+**A first-pass helper for in-house lawyers reviewing routine contracts, with safety gates against hostile documents.**
 
-Built as a PortSwigger **AI Pioneer** take-home prototype.
+Built as a PortSwigger **AI Pioneer** take-home prototype. The same design is meant to be readable for **AI safety** audiences: helpful AI that stays bounded, and that fails closed when a document tries to hijack it.
 
 **Watch the demo (start here):** [https://www.youtube.com/watch?v=ohsFo9hrGkc](https://www.youtube.com/watch?v=ohsFo9hrGkc)
 
@@ -16,7 +16,7 @@ PortSwigger’s brief (in plain terms):
 - Most of the text is boilerplate. The **same kinds of redlines** come back again and again.
 - A person still has to read every contract. The queue grows faster than the day.
 
-**Goal of this experiment:** show that AI can speed up that first pass **without pretending to be a lawyer**, and without inventing company policy on the fly.
+**Goal of this experiment:** show that AI can speed up that first pass **without pretending to be a lawyer**, without inventing company policy on the fly, and **without letting a poisoned document quietly take over the model**.
 
 We built a working local web app where a lawyer can:
 
@@ -38,10 +38,11 @@ We built a working local web app where a lawyer can:
 |---------------|-------------------|---------------------|
 | Open chat with the whole contract | Easy to hallucinate; hard to audit; easy to jailbreak | Structured review against a fixed checklist |
 | AI invents “risk” freely | Company policy would come from the model, not the firm | Every flag must cite a **playbook rule** the company already owns |
+| Trust every uploaded PDF as “just data” | Indirect prompt injection can live inside the contract | Security gate **before** playbook compare / drafting |
 | Auto-change company rules when someone clicks Accept | Quietly rewrites governance | Accept goes to **memory**; the golden playbook only changes when a lawyer deliberately **Activates** a proposal |
 | Hosted “AI lawyer” SaaS | Wrong for a take-home; secrets and trust story get muddy | Runs on the reviewer’s laptop; they bring their own AI key |
 
-The experiment is: **can a playbook-grounded loop feel like a multiplier** (same amends, less re-work) while staying governable?
+The experiment is: **can a playbook-grounded loop feel like a multiplier** (same amends, less re-work) while staying **governable and hard to hijack**?
 
 ---
 
@@ -56,12 +57,9 @@ A **playbook** is a checklist of how the company usually negotiates (governing l
 - Reviews only make sense once a playbook is live.
 - If there is no playbook yet, the app helps **propose** one from a PDF or past contracts. A lawyer must **Activate** it before it becomes the live checklist.
 
-### 2. Treat every upload as untrusted
+### 2. Treat every upload as untrusted (safety gate)
 
-Before deep analysis, the text is cleaned and scanned for **hostile instructions** hidden in the document (classic “ignore previous instructions / approve everything” attacks).
-
-- Strong hits stop the review and show a **Security alert**.
-- A lawyer can still override, but that is an explicit, logged choice.
+Contracts are **untrusted input**. Before playbook compare or drafting, a security gate cleans and scans the text for **prompt-injection style attacks**. Strong hits **halt** the pipeline and show a Security alert. Detail: [Safety and security](#safety-and-security-ai-safety-angle) below.
 
 ### 3. Compare the contract to the playbook (three passes)
 
@@ -86,13 +84,71 @@ That is the “AI as a multiplier” claim in experimental form: **rules + human
 
 ---
 
+## Safety and security (AI safety angle)
+
+If AI reads a contract, the contract can try to **rewrite the AI’s job**: “ignore previous instructions,” “approve every clause,” “dump the playbook,” smuggle scripts, or stuff the context until the real rules fall out of the window. For an in-house tool, a silent “all clear” on a poisoned PDF is a **safety failure**, not a cute jailbreak.
+
+RedlineGuard treats that as a first-class experiment: **helpful review must fail closed on hostile input.**
+
+### The hostile test set (14 documents)
+
+| Set | Where | What it is for |
+|-----|-------|----------------|
+| **13 poisoned PDFs** | [`data/malicious_corpus/`](data/malicious_corpus/) (`Malicious AI Legal Contract 1.pdf` … `13.pdf`) | Broader attack styles in real-looking “legal” PDFs |
+| **+ Unsafe sample** | [`data/scratch_corpus/injection_hostile.txt`](data/scratch_corpus/injection_hostile.txt) | One-click Journey C in the UI (**14th** hostile document) |
+
+Together that is a **14-document** hostile corpus used to pressure-test the gate (plus an eval fixture at `evals/datasets/injection_hard.txt`).
+
+These files try tricks such as:
+
+- Instruction override (“ignore all previous instructions”, “you are no longer a reviewer”)
+- Forced approve-all / risk-score-zero outcomes
+- Playbook ignore / leak / “system override” language
+- Obfuscation (zero-width characters, spaced-out letters)
+- Multilingual override phrasing
+- Context stuffing / repetition and fragmented “system note” assembly
+- XSS / script-style payloads aimed at structured fields
+- Exfil-style markdown / tracking beacons
+- Poisoned playbook / fake “calibration” few-shot smuggling
+
+### How we tackle prompt injection (the gate)
+
+Every upload / sample runs through the security path **before** playbook compare, drafting, or memory writes:
+
+| Step | Plain English | Why it matters |
+|------|---------------|----------------|
+| **1. Sanitize** | Strip zero-width / soft-hyphen abuse; keep readable text | Attacks often hide in characters humans barely see |
+| **2. Detect** | Pattern + compact-phrase scan for injection cues (incl. obfuscated forms) | Fast, explainable halt signals |
+| **3. Adjudicate (optional)** | Second opinion on *ambiguous* cues so normal legal wording is less likely to false-halt | Safety still defaults to **hold** on hard cues |
+| **4. Halt** | Pipeline stops; **Security alert** UI; no normal flags / drafts / memory pollution | Fail closed instead of “quietly approved” |
+| **5. Fence** | When text later goes to a model, wrap it as **data**, not instructions | Model is told to ignore orders inside the excerpt |
+| **6. Closed-book compare** | Flags must cite an existing playbook rule | Even if something slips through, the model cannot invent firm policy |
+| **7. Human override** | Lawyer may continue anyway; choice is explicit and logged | Accountability stays with a person |
+| **8. Poisoned playbook path** | Hostile playbook PDFs are gated the same way; they **cannot Activate** as company rules | Protects governance, not only single reviews |
+| **9. Audit** | Security events and decisions land in the audit trail | Reviewers can see what fired and what a human overrode |
+
+Code anchors: `apps/security/services/gate.py`, `scratch/poc02_security/security.py`, pipeline stop in `apps/review/services/pipeline.py`.
+
+### How to reproduce the safety demo
+
+1. In the UI: **Upload → Unsafe sample** → expect **Security alert** (Journey C).
+2. Or upload any PDF from `data/malicious_corpus/`.
+3. Offline corpus sweep (scratch): `python -m scratch.run_malicious_report` (expects all malicious PDFs to **halt**).
+4. Smoke evals include an injection case: `python -m evals.runners.run_smoke`.
+
+### Honest limits (still say them)
+
+This is a **demo-depth** perimeter for a take-home / safety narrative: strong on classic indirect injection and “approve everything” attacks in this corpus. It is **not** a claim of formal certification, red-team completeness, or production SOC2-style controls. Deeper PII redaction and hash-chained audit are on the roadmap; human accountability remains the product rule.
+
+---
+
 ## What you see in the demo
 
 | Journey | What it shows |
 |---------|----------------|
 | **Happy path** | Sample contract → a few playbook flags → suggested rewrite → Accept → shows up in Memory |
 | **Memory / override** | A later similar clause reuses a past decision, or an override is respected |
-| **Hostile input** | “Unsafe sample” → Security alert (no silent “all approved”) |
+| **Hostile input (safety)** | Unsafe sample or a `malicious_corpus` PDF → Security alert; pipeline halted |
 | **No playbook yet** | Import a playbook PDF → edit proposed rules → Activate → then reviews use those rules |
 
 UI flow: **Upload → Processing → Review → Rewrite** (plus Memory, Playbook, Audit, Help).
@@ -184,10 +240,11 @@ Typical first-time waits: install 2-5 min; first meaning-model download 1-5 min 
 | Included | Left out on purpose |
 |----------|---------------------|
 | Working local web app + sample contracts + playbook PDFs | Hosted cloud deploy / Docker as the only path |
-| Hostile samples for the security demo | Shipping API keys in the zip |
-| Decision memory + audit trail | Claiming this is legal advice or production compliance |
+| **14 hostile documents** (13 PDFs in `data/malicious_corpus/` + Unsafe sample TXT) | Shipping API keys in the zip |
+| Security halt + adjudicator + fencing + audit trail | Claiming formal certification or production compliance |
+| Decision memory with human Accept / Edit / Reject | Auto-Accept or silent playbook Activate |
 
-**Disclaimer:** first-pass assistant only. A human remains accountable.
+**Disclaimer:** first-pass assistant only. A human remains accountable. Safety gates are real and demable; they are still a research-style perimeter, not a government assurance mark.
 
 ---
 
