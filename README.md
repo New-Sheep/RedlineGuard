@@ -6,8 +6,6 @@ Built as a PortSwigger **AI Pioneer** take-home prototype.
 
 **Watch the demo (start here):** [https://www.youtube.com/watch?v=ohsFo9hrGkc](https://www.youtube.com/watch?v=ohsFo9hrGkc)
 
-GitHub: https://github.com/New-Sheep/RedlineGuard
-
 ---
 
 ## What were we trying to achieve?
