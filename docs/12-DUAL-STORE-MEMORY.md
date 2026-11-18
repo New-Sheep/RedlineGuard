@@ -1,9 +1,12 @@
 # Dual-store memory (ORM + Chroma)
 
-**Django `Decision` rows** are the system of record (History, Undo, audit links).
+**Purpose:** One invariant for decision memory. Flows: [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md). Architecture: [`16-CURRENT-ARCHITECTURE.md`](16-CURRENT-ARCHITECTURE.md).
 
-**Chroma** (`data/vector_memory`, collection `django_decisions_v2`) is the **retrieval index only** — clause-excerpt similarity for drafting / Memory search.
+| Store | Role |
+|-------|------|
+| Django `Decision` rows | System of record (History, Undo, audit links) |
+| Chroma (`data/vector_memory`, `django_decisions_v2`) | Retrieval index for clause-excerpt similarity (drafting / Memory search) |
 
-Unlearn and admin **Reset decisions** clear **both**. Do not swap Chroma mid-demo; a future `DecisionStore` adapter can target pgvector / Oracle 23ai without rewriting the Memory UI.
+Unlearn and admin **Reset decisions** clear both stores. Chroma is local and gitignored; first clone starts empty until `seed_precedents` or an Accept (see [`13-HANDOFF.md`](13-HANDOFF.md)).
 
-Chroma is **local and gitignored** — reviewers get an empty index on first clone; use `seed_precedents` or Accept once (see [`13-HANDOFF.md`](13-HANDOFF.md)).
+A future `DecisionStore` adapter can target pgvector / Oracle 23ai while keeping the Memory UI.

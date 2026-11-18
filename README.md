@@ -12,7 +12,7 @@ Printable checklist: [`docs/14-EVALUATOR-GUIDE.md`](docs/14-EVALUATOR-GUIDE.md) 
 
 ---
 
-## Start here (about 10–20 minutes)
+## Start here (about 10-20 minutes)
 
 Do these in order. Details for each step are below.
 
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 | sentence-transformers | MiniLM embeddings when `FAKE_EMBED=0` |
 | python-dotenv | Load `.env` |
 
-First `pip install` often takes **2–5 minutes** (longer if PyTorch wheels for sentence-transformers are pulled).
+First `pip install` often takes **2-5 minutes** (longer if PyTorch wheels for sentence-transformers are pulled).
 
 ---
 
@@ -116,7 +116,7 @@ Open `.env` and **must-fill** at least `NVIDIA_API_KEY` for the intended demo (o
 | `OLLAMA_HOST` | If ollama | `http://127.0.0.1:11434` | Local Ollama server. |
 | `OLLAMA_MODEL` | If ollama | `qwen2.5:7b-instruct` | Model you already `ollama pull`’d. |
 | `OLLAMA_TIMEOUT_S` | Optional | `120` | Seconds before Ollama call times out. |
-| `LLM_JUDGE` | Optional | `1` | L2 closed-book judge on flags when `FAKE_LLM=0`. |
+| `LLM_JUDGE` | Optional | unset / `1` | L2 closed-book judge. **Unset = auto-on when `FAKE_LLM=0`, auto-off under Fake.** Set `0` to force off; `1` to force on (incl. Fake stub). |
 | `SEMANTIC_COMPARE` | Leave default | `1` | L1 semantic playbook matching. |
 | `REQUIRE_AUTH` | Leave default | `1` | Session login required (demo). |
 | `CHROMA_COLLECTION` | Leave default | `django_decisions_v2` | Memory collection name. |
@@ -184,10 +184,10 @@ Honest ranges on a normal laptop / office network:
 
 | Step | Typical time |
 |------|----------------|
-| `pip install -r requirements.txt` | ~2–5 min (longer if torch / sentence-transformers wheels download) |
-| First MiniLM load (`FAKE_EMBED=0`) | ~1–5 min once (~90 MB); later starts reuse the cache |
-| `check_llm --draft` | ~10–60 s (NVIDIA latency) |
-| First contract analyze (live LLM) | ~30–90 s typical |
+| `pip install -r requirements.txt` | ~2-5 min (longer if torch / sentence-transformers wheels download) |
+| First MiniLM load (`FAKE_EMBED=0`) | ~1-5 min once (~90 MB); later starts reuse the cache |
+| `check_llm --draft` | ~10-60 s (NVIDIA latency) |
+| First contract analyze (live LLM) | ~30-90 s typical |
 | Playbook PDF propose (live LLM) | Can be longer (tens of seconds to a couple of minutes) |
 | Later analyzes (models warmed) | Usually faster |
 
@@ -213,18 +213,18 @@ Also try your own PDF / DOCX / TXT. Prefer text-based PDFs (scanned image PDFs u
 
 ```mermaid
 flowchart LR
-  upload[Upload_or_sample]
-  extract[Extract_text]
-  security[Security_gate]
-  compare[Playbook_L0_L1_L2]
-  draft[LLM_drafts]
-  review[Lawyer_Review]
-  memory[Chroma_memory]
+ upload[Upload_or_sample]
+ extract[Extract_text]
+ security[Security_gate]
+ compare[Playbook_L0_L1_L2]
+ draft[LLM_drafts]
+ review[Lawyer_Review]
+ memory[Chroma_memory]
 
-  upload --> extract --> security
-  security -->|halt| alert[Security_alert]
-  security -->|ok| compare --> draft --> review
-  review -->|Accept_Edit_Reject| memory
+ upload --> extract --> security
+ security -->|halt| alert[Security_alert]
+ security -->|ok| compare --> draft --> review
+ review -->|Accept_Edit_Reject| memory
 ```
 
 | App package | Responsibility |
@@ -239,7 +239,9 @@ flowchart LR
 
 **Stack:** Django templates + SQLite + local Chroma. No React. LLM via NVIDIA / Ollama / other OpenAI-compatible HTTP.
 
-Deeper map: [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) · backend plan: [`docs/05-DJANGO-BACKEND-PLAN.md`](docs/05-DJANGO-BACKEND-PLAN.md) · compare layers: [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md)
+**Compare (current):** L0 regex + L1 semantic + L2 closed-book candidate judge (auto-on when `FAKE_LLM=0`). Detail: [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md).
+
+Deeper map: [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) · as-built architecture: [`docs/16-CURRENT-ARCHITECTURE.md`](docs/16-CURRENT-ARCHITECTURE.md) · compare layers: [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md)
 
 ---
 
@@ -321,35 +323,39 @@ The UI, playbook matching, and security halt still run; **drafts are canned fixt
 
 ## Deeper docs (after you can run)
 
-1. [`docs/14-EVALUATOR-GUIDE.md`](docs/14-EVALUATOR-GUIDE.md) — one-page checklist  
-2. [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) — why local / zip / no Docker  
-3. [`docs/00-WHAT-WE-ARE-BUILDING.md`](docs/00-WHAT-WE-ARE-BUILDING.md) — product in plain English  
-4. [`docs/01-PRD-MVP.md`](docs/01-PRD-MVP.md) — Must / Should / Won’t  
-5. [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) — flows and statuses  
-6. [`docs/07-MVP-AUDIT-CHECKPOINT.md`](docs/07-MVP-AUDIT-CHECKPOINT.md) — shipped vs PRD  
-7. [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md) — L0 + L1 + L2  
+| Doc | Purpose |
+|-----|---------|
+| [`docs/14-EVALUATOR-GUIDE.md`](docs/14-EVALUATOR-GUIDE.md) | Printable checklist |
+| [`docs/13-HANDOFF.md`](docs/13-HANDOFF.md) | Delivery decisions (zip / venv / assets) |
+| [`docs/00-WHAT-WE-ARE-BUILDING.md`](docs/00-WHAT-WE-ARE-BUILDING.md) | Product in plain English |
+| [`docs/01-PRD-MVP.md`](docs/01-PRD-MVP.md) | Must / Should / Won’t |
+| [`docs/06-PRODUCT-MAP.md`](docs/06-PRODUCT-MAP.md) | Flows and statuses |
+| [`docs/16-CURRENT-ARCHITECTURE.md`](docs/16-CURRENT-ARCHITECTURE.md) | As-built architecture |
+| [`docs/07-MVP-AUDIT-CHECKPOINT.md`](docs/07-MVP-AUDIT-CHECKPOINT.md) | Shipped vs PRD |
+| [`docs/08-COMPARE-ALGORITHM-AUDIT.md`](docs/08-COMPARE-ALGORITHM-AUDIT.md) | Compare L0 / L1 / L2 |
+| [`docs/11-LAWYER-API.md`](docs/11-LAWYER-API.md) | Thin JSON APIs |
+| [`docs/12-DUAL-STORE-MEMORY.md`](docs/12-DUAL-STORE-MEMORY.md) | ORM + Chroma invariant |
+| [`docs/09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](docs/09-OLLAMA-LAWYER-ASSISTANT-PRD.md) | Post-MVP co-pilots |
+| [`docs/15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md`](docs/15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md) | Planned multi-agent vision |
 
-Vision-only (not how to run): `docs/CLAUDE_PORTSWIGGER.md`
-
-**Conflict rule:** README + handoff + PRD win over vision docs.
+**Authority:** README + handoff + PRD for the take-home; vision docs are sequel only.
 
 ---
 
 ## Smoke checklist
 
-- [ ] `check_llm --draft` succeeds with live model  
-- [ ] Journey **A:** Sample with issues → flags cite rules → Accept → Memory  
-- [ ] Journey **B:** seed precedents or prior Accept → memory / Override  
-- [ ] Journey **C:** Unsafe sample → Security alert  
-- [ ] Journey **E:** playbook PDF import → Activate  
-- [ ] UI drafts are **not** stuck on Fake fixtures  
+- [ ] `check_llm --draft` succeeds with live model 
+- [ ] Journey **A:** Sample with issues → flags cite rules → Accept → Memory 
+- [ ] Journey **B:** seed precedents or prior Accept → memory / Override 
+- [ ] Journey **C:** Unsafe sample → Security alert 
+- [ ] Journey **E:** playbook PDF import → Activate 
+- [ ] UI drafts show live LLM output on the intended path (`FAKE_LLM=0`)
 
-## Limitations
+## Scope notes
 
-- Not legal advice  
-- Prototype only (local SQLite + Chroma)  
-- Reviewers supply their own LLM access; keys never ship in git  
-- Heuristic + layered compare; not a full production legal platform  
+- First-pass assistant only; a human remains accountable  
+- Local prototype (SQLite + Chroma); reviewers supply their own LLM keys  
+- Compare is L0 + L1 + L2 candidate judge (discovery planned; see compare audit)
 
 ## Tests / evals (optional)
 

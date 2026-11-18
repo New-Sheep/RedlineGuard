@@ -1,12 +1,12 @@
 # Evaluator guide (one page)
 
-Print or keep open while you set up. Full detail: [`../README.md`](../README.md).
+**Purpose:** Printable setup + demo checklist. Full runbook: [`../README.md`](../README.md). Delivery decisions: [`13-HANDOFF.md`](13-HANDOFF.md).
 
 ## Prerequisites
 
 - [ ] Python 3.11+
 - [ ] NVIDIA API key ([build.nvidia.com](https://build.nvidia.com)) **or** Ollama + pulled instruct model
-- [ ] Optional: Hugging Face token if MiniLM download fails
+- [ ] Optional: Hugging Face token if MiniLM download is rate-limited
 
 ## Setup
 
@@ -15,7 +15,7 @@ cd RedlineGuard          # after unzip or git clone
 python -m venv .venv
 # Windows: .venv\Scripts\activate
 # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt          # ~2–5 min
+pip install -r requirements.txt          # ~2-5 min
 copy .env.example .env                   # or: cp .env.example .env
 ```
 
@@ -47,10 +47,10 @@ URL: http://127.0.0.1:8000/
 
 | Step | Time |
 |------|------|
-| pip install | ~2–5 min |
-| First MiniLM | ~1–5 min |
-| check_llm | ~10–60 s |
-| First analyze | ~30–90 s |
+| pip install | ~2-5 min |
+| First MiniLM | ~1-5 min |
+| check_llm | ~10-60 s |
+| First analyze | ~30-90 s |
 
 ## Demo journeys
 
@@ -59,16 +59,16 @@ URL: http://127.0.0.1:8000/
 - [ ] **C:** Unsafe sample → Security halt  
 - [ ] **E:** `/playbook/` → import PDF → Activate  
 
-## You are done when
+## Done when
 
-Live LLM drafts appear (not Fake stubs), flags cite playbook rules, and Accept lands on Memory.
+Live LLM drafts appear, flags cite playbook rules, and Accept lands on Memory.
 
 ## If stuck
 
 | Issue | Fix |
 |-------|-----|
 | LLM check fails | Fix key / provider; re-run `check_llm --draft` |
-| No MiniLM | Set `HF_TOKEN` or temporary `FAKE_EMBED=1` |
-| Need offline UI only | `FAKE_LLM=1` + `FAKE_EMBED=1` (not the judged path) |
+| MiniLM download fails | Set `HF_TOKEN`, or temporary `FAKE_EMBED=1` |
+| Offline UI only | `FAKE_LLM=1` + `FAKE_EMBED=1` (fixtures; backup path) |
 
-Architecture / APIs: README sections + [`11-LAWYER-API.md`](11-LAWYER-API.md) · [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) · designs: [`../designs/README.md`](../designs/README.md)
+More: [`11-LAWYER-API.md`](11-LAWYER-API.md) · [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) · [`../designs/README.md`](../designs/README.md)

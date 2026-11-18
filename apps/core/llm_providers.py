@@ -31,7 +31,7 @@ _PRESETS: dict[str, tuple[str, str, str]] = {
     "nvidia": (
         "NVIDIA_API_KEY",
         "https://integrate.api.nvidia.com/v1",
-        "meta/llama-3.1-8b-instruct",
+        "nvidia/nemotron-3.5-bolt-e4b",
     ),
 }
 

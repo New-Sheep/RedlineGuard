@@ -1,13 +1,11 @@
-# Product map — RedlineGuard (flows, statuses, data, decisions)
+# Product map (flows, statuses, data)
 
 | | |
 |---|---|
-| **Audience** | Builders, Loom/demo, future agents |
-| **Status** | Living reference — reflects the **implemented** Django app |
+| **Purpose** | Living reference for the **implemented** app: what happens when… |
+| **Audience** | Builders, Loom/demo, agents |
 | **Last updated** | 2026-07-19 |
-| **Related** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`01-PRD-MVP.md`](01-PRD-MVP.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`05-DJANGO-BACKEND-PLAN.md`](05-DJANGO-BACKEND-PLAN.md) |
-
-**This document is the mental model for the product going forward.** Prefer it over scattered chat when answering “what happens when…?”
+| **Related** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`01-PRD-MVP.md`](01-PRD-MVP.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`16-CURRENT-ARCHITECTURE.md`](16-CURRENT-ARCHITECTURE.md) · [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md) |
 
 ---
 
@@ -22,29 +20,29 @@
 
 ```mermaid
 flowchart TB
-  subgraph setup [Playbook_setup]
-    PB_upload[Import_PDF] --> PB_sec[Security]
-    PB_sec -->|halt| PB_halt[Cannot_Activate]
-    PB_sec -->|ok| PB_propose[Propose_rules]
-    PB_propose --> PB_edit[Lawyer_edits]
-    PB_edit --> PB_act[Activate_golden_JSON]
-  end
+ subgraph setup [Playbook_setup]
+ PB_upload[Import_PDF] --> PB_sec[Security]
+ PB_sec -->|halt| PB_halt[Cannot_Activate]
+ PB_sec -->|ok| PB_propose[Propose_rules]
+ PB_propose --> PB_edit[Lawyer_edits]
+ PB_edit --> PB_act[Activate_golden_JSON]
+ end
 
-  subgraph review [Contract_review]
-    C_up[Upload_or_sample] --> C_ext[Extract]
-    C_ext --> C_sec[Security]
-    C_sec -->|halt| C_alert[Security_alert]
-    C_sec -->|ok| C_triage[Triage]
-    C_triage --> C_cmp[Compare_playbook_plus_overrides]
-    C_cmp --> C_draft[Draft]
-    C_draft --> C_rev[Review_UI]
-    C_rev --> C_rw[Rewrite]
-    C_rw --> C_dec[Decision]
-  end
+ subgraph review [Contract_review]
+ C_up[Upload_or_sample] --> C_ext[Extract]
+ C_ext --> C_sec[Security]
+ C_sec -->|halt| C_alert[Security_alert]
+ C_sec -->|ok| C_triage[Triage]
+ C_triage --> C_cmp[Compare_playbook_plus_overrides]
+ C_cmp --> C_draft[Draft]
+ C_draft --> C_rev[Review_UI]
+ C_rev --> C_rw[Rewrite]
+ C_rw --> C_dec[Decision]
+ end
 
-  PB_act -.->|rules used by| C_cmp
-  C_dec -->|Accept_Edit| Chroma[Chroma_memory]
-  C_dec -->|Override| OV[playbook_overrides.json]
+ PB_act -.->|rules used by| C_cmp
+ C_dec -->|Accept_Edit| Chroma[Chroma_memory]
+ C_dec -->|Override| OV[playbook_overrides.json]
 ```
 
 ---
@@ -65,7 +63,7 @@ flowchart TB
 | `/api/memory/<id>/` | JSON DELETE | Unlearn (also POST) |
 | `/playbook/` | Active company playbook | What’s checking contracts |
 | `/playbook/import/` → `/playbook/imports/<id>/` | Import PDF / edit / Activate | Setup E1 |
-| `/playbook/starter/` | Starter from 3–5 past contracts | Setup E2 |
+| `/playbook/starter/` | Starter from 3-5 past contracts | Setup E2 |
 
 Thin JSON memory endpoints exist for Loom/devtools; the product UI remains mostly server-rendered HTML.
 
@@ -94,12 +92,12 @@ Typical happy path: `uploaded` → `extracted` → `processing` → `ready`.
 
 Order in `apps.review.services.pipeline.run_pipeline`:
 
-1. **Extract** — PDF/TXT → `extracted_text` (already done before pipeline if upload path ran extract)  
-2. **Security** — sanitize + injection detect → `SecurityEvent`; if halt → stop (`halted`)  
-3. **Triage** — rough kind/stakes (e.g. `nda`, `routine_queue`) — labels only  
-4. **Playbook compare** — load golden JSON, **remove overridden rules**, match patterns → findings  
-5. **Compare** — L0 regex + L1 local semantic retrieve (`SEMANTIC_COMPARE`); every flag cites `playbook_rule_id`; score `BASE=0` with breakdown on Review  
-6. **Draft** — for each finding: search Chroma on **clause excerpt** (not playbook reason); apply `MEMORY_MAX_DISTANCE`; skip Accept reuse if a near **Reject** exists; else playbook fallback / LLM  
+1. **Extract** - PDF/TXT → `extracted_text` (already done before pipeline if upload path ran extract) 
+2. **Security** - sanitize + injection detect → `SecurityEvent`; if halt → stop (`halted`) 
+3. **Triage** - rough kind/stakes (e.g. `nda`, `routine_queue`) - labels only 
+4. **Playbook compare** - load golden JSON, **remove overridden rules**, match patterns → findings 
+5. **Compare** - L0 regex + L1 local semantic retrieve (`SEMANTIC_COMPARE`); every flag cites `playbook_rule_id`; score `BASE=0` with breakdown on Review 
+6. **Draft** - for each finding: search Chroma on **clause excerpt** (not playbook reason); apply `MEMORY_MAX_DISTANCE`; skip Accept reuse if a near **Reject** exists; else playbook fallback / LLM 
 7. Persist **`ReviewRun` + Findings + Drafts** (Finding may store `sources` / `confidence`; ReviewRun stores `score_breakdown`) → status `ready`
 
 Empty playbook → still `ready`, but **0 findings** + “set up playbook” banner.
@@ -133,14 +131,14 @@ Upload returns quickly → **Processing** page polls `/contracts/<id>/status.jso
 
 ### Memory UX (Sprint 5)
 
-- Findings carry **`clause_excerpt`** (matched span); Chroma collection **`django_decisions_v2`** embeds that text with metadata (`filename`, `doc_kind`, …).  
-- **`MEMORY_MAX_DISTANCE`** gates reuse (default ~0.45 MiniLM / looser for hash).  
-- **`/memory/`** lists precedents; **Unlearn** deletes Chroma id + sets `Decision.memory_active=False`.  
+- Findings carry **`clause_excerpt`** (matched span); Chroma collection **`django_decisions_v2`** embeds that text with metadata (`filename`, `doc_kind`, …). 
+- **`MEMORY_MAX_DISTANCE`** gates reuse (default ~0.45 MiniLM / looser for hash). 
+- **`/memory/`** lists precedents; **Unlearn** deletes Chroma id + sets `Decision.memory_active=False`. 
 - Rejects are stored as Avoid signals and block similar Accept reuse.
 
 ### UI language (PactPilot SSR port)
 
-Django templates stay the product UI — **no React**. Visual system lifted from PactPilot:
+Django templates stay the product UI - **no React**. Visual system lifted from PactPilot:
 
 | Asset | Where |
 |-------|--------|
@@ -162,7 +160,7 @@ On Rewrite → Save (`apps.decisions.services.decide.record_decision`):
 |--------|----------------|
 | **Accept** | Saves decision; writes **Chroma** (clause excerpt + final text) so next similar flag can reuse |
 | **Edit** | Same as Accept, but with your edited final text → Chroma |
-| **Reject** | Saves decision; writes **Chroma** as Avoid — near matches skip memory Accept reuse |
+| **Reject** | Saves decision; writes **Chroma** as Avoid - near matches skip memory Accept reuse |
 | **Override & accept as-is** | Saves decision; appends rule to **`playbook_overrides.json`**; that rule won’t flag again; **does not** change golden playbook; **no** Chroma |
 
 ---
@@ -174,9 +172,9 @@ Separate object: `PlaybookImport`.
 | Status | Meaning |
 |--------|---------|
 | `uploaded` | File in |
-| `proposed` | Rules proposed — edit before Activate |
+| `proposed` | Rules proposed - edit before Activate |
 | `activated` | Written to `playbook_config.json` |
-| `halted` | Poisoned / injection — **cannot** Activate |
+| `halted` | Poisoned / injection - **cannot** Activate |
 | `failed` | Extract/propose error |
 
 ---
@@ -185,12 +183,12 @@ Separate object: `PlaybookImport`.
 
 ```mermaid
 erDiagram
-  Contract ||--o{ SecurityEvent : has
-  Contract ||--o{ ReviewRun : has
-  Contract ||--o{ Decision : has
-  ReviewRun ||--o{ Finding : has
-  Finding ||--o| Draft : has
-  Finding ||--o{ Decision : has
+ Contract ||--o{ SecurityEvent : has
+ Contract ||--o{ ReviewRun : has
+ Contract ||--o{ Decision : has
+ ReviewRun ||--o{ Finding : has
+ Finding ||--o| Draft : has
+ Finding ||--o{ Decision : has
 ```
 
 | Store | Holds |
@@ -201,8 +199,8 @@ erDiagram
 | **`data/vector_memory/` (Chroma)** | Accept/Edit/Reject precedents in `django_decisions_v2` (clause-embedded) |
 | **`media/`** | Uploaded PDFs |
 
-Relationship in practice:  
-**Contract → ReviewRun → Finding → Draft**  
+Relationship in practice: 
+**Contract → ReviewRun → Finding → Draft** 
 **Finding → Decision** (and Decision also points at Contract).
 
 `PlaybookImport` is standalone (setup track).
@@ -215,7 +213,7 @@ Relationship in practice:
 |---------|--------|
 | Upload / sample analyze | Yes (async + progress) |
 | Security halt | Yes |
-| Playbook-cited flags | Yes (L0 regex + L1 local semantic; no LLM judge yet) |
+| Playbook-cited flags | Yes (L0 + L1 + L2 when enabled; see [`08`](08-COMPARE-ALGORITHM-AUDIT.md)) |
 | Fake draft + memory draft + LLM suggested | Yes (`FAKE_LLM=1` default) |
 | Accept / Edit / Reject / Override | Yes |
 | History | Yes |
@@ -224,18 +222,16 @@ Relationship in practice:
 | Reject as Avoid (blocks reuse) | Yes |
 | PactPilot-style UI (SSR tokens, cockpit, highlights) | Yes |
 | Playbook PDF import → Activate | Yes |
-| Starter from 3–5 past contracts (E2) | Yes (`/playbook/starter/`) |
+| Starter from 3-5 past contracts (E2) | Yes (`/playbook/starter/`) |
 | Seed precedents (`seed_precedents`) | Yes |
 | Proposed vs active playbook labels | Yes |
 | Empty-playbook onboarding CTA | Yes (PDF + starter) |
 | Curated demo samples | Yes |
 | MiniLM warmup at startup | Yes (when `FAKE_EMBED=0`) |
-| Real LLM compare | No (patterns + local semantic; L2 planned) |
-| JSON REST API | Thin: status + memory |
-| SSO / multi-user | No |
+| Real LLM compare (L2) | Yes (candidate judge; auto-on when `FAKE_LLM=0`; discovery planned; [`08`](08-COMPARE-ALGORITHM-AUDIT.md)) |
+| JSON REST API | Thin: status + memory ([`11-LAWYER-API.md`](11-LAWYER-API.md)) |
 
-**Shipped vs PRD scorecard + secure LLM roadmap:** [`07-MVP-AUDIT-CHECKPOINT.md`](07-MVP-AUDIT-CHECKPOINT.md).  
-**How flags/scores work (L0+L1 shipped; L2 planned):** [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md).
+**Scorecard:** [`07-MVP-AUDIT-CHECKPOINT.md`](07-MVP-AUDIT-CHECKPOINT.md). **Compare layers:** [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md).
 
 ---
 
@@ -243,9 +239,9 @@ Relationship in practice:
 
 When analysis finishes with status **`ready`**:
 
-- Triage like `unknown / routine_queue` = “not classified as a special doc type”  
-- A finding with **`REQUIRES_HUMAN`** and draft **`none`** means: a playbook pattern matched, but the rule has **no fallback text**, so the app asks the lawyer to decide instead of inventing a rewrite  
-- Next click: **Review rewrite** → Accept / Edit / Reject / Override  
+- Triage like `unknown / routine_queue` = “not classified as a special doc type” 
+- A finding with **`REQUIRES_HUMAN`** and draft **`none`** means: a playbook pattern matched, but the rule has **no fallback text**, so the app asks the lawyer to decide instead of inventing a rewrite 
+- Next click: **Review rewrite** → Accept / Edit / Reject / Override 
 
 ---
 

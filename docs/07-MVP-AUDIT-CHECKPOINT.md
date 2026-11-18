@@ -1,56 +1,60 @@
-# MVP audit checkpoint — RedlineGuard
+# MVP audit checkpoint
+
+**Purpose:** Dated scorecard of what shipped vs the PRD (2026-07-20). Scope authority remains [`01-PRD-MVP.md`](01-PRD-MVP.md). Compare detail: [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md).
 
 | | |
 |---|---|
-| **Document type** | Retrospective + secure LLM roadmap |
-| **Date** | 2026-07-20 |
-| **Audience** | Builders, PortSwigger take-home reviewers |
-| **Related** | [`01-PRD-MVP.md`](01-PRD-MVP.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) · [`08-COMPARE-ALGORITHM-AUDIT.md`](08-COMPARE-ALGORITHM-AUDIT.md) · [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md) · [`10-LAWYER-WISHLIST-SPRINTS.md`](10-LAWYER-WISHLIST-SPRINTS.md) · [`CLAUDE_PORTSWIGGER.md`](CLAUDE_PORTSWIGGER.md) (vision only) |
-
-**Conflict rule:** This checkpoint *describes* what shipped vs the PRD. The PRD remains scope authority for Must/Should/Won’t. Vision ideas in `CLAUDE_PORTSWIGGER.md` stay out of MVP unless listed as Must/Should there.
+| **Audience** | Builders, PortSwigger reviewers |
+| **Related** | [`00-WHAT-WE-ARE-BUILDING.md`](00-WHAT-WE-ARE-BUILDING.md) · [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) · [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`16-CURRENT-ARCHITECTURE.md`](16-CURRENT-ARCHITECTURE.md) |
 
 ---
 
-## 1. Vision vs what we shipped
+## Horizons
 
-| Horizon | Intent | Where we are |
-|--------|--------|----------------|
-| **Promise** | Upload → playbook → flag/counter → decide → remember | **Shipped** |
-| **Principle** | AI proposes · playbook decides · lawyer confirms | **Held** |
-| **MVP (PRD)** | GitHub/zip Loom demo (venv, no hosted deploy) | **~90–95% Must** |
-| **Lawyer agents + wishlist** | Co-pilots, catalogue, undo, audit, help | **Shipped** |
-| **Vision** (`CLAUDE_PORTSWIGGER.md`) | ReAct, hash-chain, PII suite, evals | **In progress** (V1–V5 track) |
+| Horizon | Intent | Status |
+|--------|--------|--------|
+| Promise | Upload → playbook → flag/counter → decide → remember | Shipped |
+| Principle | AI proposes · playbook decides · lawyer confirms | Held |
+| MVP (PRD) | Zip/GitHub Loom demo on local venv | ~90-95% Must |
+| Lawyer agents + wishlist | Co-pilots, catalogue, undo, audit, help | Shipped |
+| Stretch (V2-V5) | PII redaction, missed-clause Activate, hash-chain audit, evals smoke | In progress |
+| Vision | LangGraph / ReAct orchestration | Planned ([`15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md`](15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md)) |
 
 ---
 
-## 2. Scorecard (2026-07-20)
+## Scorecard
 
-### Goals G1–G10 — **Done**
-
-### Journeys A–E — **Done** (incl. E2 starter, GapSuggest F27)
-
-### Compare — **L0 + L1 + L2 shipped** (`layer_llm.py`; optional when `FAKE_LLM=0`)
-
-### Feature snapshot
-
-| Feature | Status |
-|---------|--------|
-| Upload PDF / DOCX / TXT (10 MB cap) | Yes (V1) |
+| Item | Status |
+|------|--------|
+| Goals G1-G10 | Done |
+| Journeys A-E (incl. E2 starter, GapSuggest) | Done |
+| Compare L0 + L1 + L2 candidate judge | Done (auto-on when `FAKE_LLM=0`; discovery planned; see [`08`](08-COMPARE-ALGORITHM-AUDIT.md)) |
+| Upload PDF / DOCX / TXT | Yes |
 | Security halt + AI adjudicator | Yes |
-| L0/L1/L2 playbook flags | Yes |
-| Magical LLM agents | Yes |
 | Memory / Override / Undo / Audit | Yes |
 | Contracts catalogue + Help | Yes |
-| PII redaction before cloud LLM | V2 track |
-| Missed clause → Activate | V3 track |
-| Hash-chain audit | V4 track |
-| Evals smoke | V5 track |
-| SSO / ReAct | No (Won’t / deferred) |
+| Magical LLM agents | Yes |
+| PII redaction before cloud LLM | V2 |
+| Missed clause → Activate | V3 |
+| Hash-chain audit | V4 |
+| Evals smoke | V5 |
+| SSO | Deferred |
 
-**Remaining MVP Could:** F21 (PII), F22 (missed clause) — implementing in V2/V3.
+### Lawyer wishlist (folded from former sprint list)
+
+| Focus |
+|-------|
+| Contracts catalogue + paginated History |
+| Undo / revoke override / playbook restore + CRUD APIs |
+| False-positive report + playbook auditor |
+| PDF pane + finding evidence |
+| REST lists + AuditEvent |
+| `/help/` tutorial |
+
+**Governance:** Accept updates memory / overrides; golden playbook changes only on deliberate Activate (or restore).
 
 ---
 
-## 3. Secure LLM layers
+## Secure LLM layers
 
-Shape unchanged: sanitize → detect → adjudicate → fence → structured output → fail-safe Fake. V2 adds PII redaction on outbound LLM payloads; V4 adds hash-chained `AuditEvent`.
+Sanitize → detect → adjudicate → fence → structured output → fail-safe Fake. V2 adds PII redaction on outbound LLM payloads; V4 adds hash-chained `AuditEvent`.

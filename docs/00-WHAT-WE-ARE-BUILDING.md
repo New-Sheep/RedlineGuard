@@ -1,144 +1,95 @@
-# What are we actually building?
+# What are we building?
 
-**Read this before vision docs (`CLAUDE_PORTSWIGGER.md`, raw Gemini notes).**  
-If those conflict with this file or the [MVP PRD](01-PRD-MVP.md), **the MVP wins**.
-
----
-
-## In one sentence
-
-**RedlineGuard** helps an in-house lawyer upload a routine contract, check it against the company’s written rules (a **playbook**), see what doesn’t match, get a suggested rewrite when the playbook allows one, and Accept / Edit / Reject — so the next similar contract is easier.
+**Purpose:** Plain-English product orientation. Scope law lives in [`01-PRD-MVP.md`](01-PRD-MVP.md).
 
 ---
 
-## Who is it for?
+## One sentence
 
-**Sarah** — lawyer inside PortSwigger (not a law firm). Queue of mutual NDAs, small order forms, mostly boilerplate. Same redlines keep coming back. End of month/quarter gets overwhelming.
-
-She needs a **first-pass co-pilot**, not a chatbot and not “AI lawyer.”
-
-We are **not** building for a small-business founder (that was PactPilot).
-
----
-
-## What “AI as a multiplier” means here
-
-Passive AI: “Here’s a summary / some risks.”  
-
-**Multiplier (what we want):**
-
-1. Rules live in a **playbook file** (governance can change without rewriting the app)  
-2. The model only judges **against that playbook** (closed-book — doesn’t invent random legal compromises)  
-3. Sarah’s Accept / Edit / Reject (and optional “override, this is OK”) **feeds the next review**  
-
-That’s how we address “amends we’ve seen before.”
-
-**Setup when there’s no playbook yet:** we don’t invent company policy on the fly. We treat it as onboarding — clear empty state, upload a playbook PDF or a few past contracts, AI proposes rules, Sarah reviews and **activates**. Only then do reviews produce real flags. Memory still helps after findings exist; it doesn’t invent the first checklist.
+**RedlineGuard** helps an in-house lawyer upload a routine contract, check it against the company’s written rules (a **playbook**), see what doesn’t match, get a suggested rewrite when the playbook allows one, and Accept / Edit / Reject so the next similar contract is easier.
 
 **Principle:** AI proposes. The playbook decides. The lawyer confirms.
 
 ---
 
-## The MVP loop
+## Who it is for
+
+**Sarah**, a lawyer inside PortSwigger (in-house, not a law firm). Queue of mutual NDAs and small order forms. Same redlines keep coming back. She needs a **first-pass co-pilot**.
+
+---
+
+## AI as a multiplier
+
+1. Rules live in a **playbook file** (governance changes without rewriting the app)
+2. The model judges **against that playbook** (closed-book)
+3. Sarah’s Accept / Edit / Reject (and optional override) **feeds the next review**
+
+**Setup when the playbook is empty:** empty state → upload a playbook PDF or past contracts → AI proposes rules → Sarah reviews and **Activates**. Only then do reviews produce real flags.
+
+---
+
+## The loop
 
 ```
-(If no playbook yet: empty state → propose rules from PDF or past contracts → Sarah activates)
+(If no playbook: empty state → propose → Activate)
 Upload PDF (or sample)
     → Security: treat text as untrusted (clean + fence before AI)
     → Compare to playbook_config.json
-    → Show flagged bits (highlighted) + which rule they broke
-    → Suggest rewrite IF the playbook has fallback text
-       else mark “Needs human”
+    → Flagged bits + which rule they broke
+    → Suggest rewrite if playbook has fallback text; else Needs human
     → Accept / Edit / Reject
     → Remember (decision history and/or playbook override)
 ```
 
-**Also must demo:** a nasty sample that tries to trick the AI (“ignore instructions…”) — we block or clearly neutralise it. Same idea for a **poisoned playbook PDF** — halt; don’t let it become the company rules.
+Also demable: hostile sample that tries to trick the AI → Security alert. Poisoned playbook PDF → halt before Activate.
 
 ---
 
-## Screens (still four + a couple of small extras)
+## Screens
 
-Visuals: [`designs/`](../designs/) — Upload → Processing → Review → Rewrite.
+Visuals: [`designs/`](../designs/) (Upload → Processing → Review → Rewrite).
 
 | Screen | Job |
 |---|---|
-| Upload | Get a PDF / sample in; “Not legal advice” |
-| Processing | Reading → security check → playbook compare |
-| Review | Contract + flags (each flag cites a playbook rule) |
+| Upload | File or sample |
+| Processing | Reading → security → playbook compare |
+| Review | Contract + flags (each cites a playbook rule) |
 | Rewrite | Original vs suggested; Accept / Edit / Reject |
-| Security alert | When injection-style input is caught |
-| History (simple) | Past decisions |
-| Playbook view | Active rules we’re checking |
-| Playbook setup | Empty state → import PDF / past contracts → edit proposal → Activate |
-
-Ignore Stitch’s Dashboard / Team / Archive chrome.
+| Security alert | Hostile / injection-style input |
+| History | Past decisions |
+| Playbook | Active rules + setup (import → Activate) |
 
 ---
 
-## Journeys you must be able to show
+## Demo journeys
 
-**A — Happy path:** sample contract → 2–4 playbook flags → rewrite → Accept.  
-
-**B — Multiplier:** either (1) second contract reuses a prior Accept in the draft, and/or (2) “Override & accept” writes an exception the next run respects.  
-
-**C — Security:** injection sample does **not** get a silent “all approved.”  
-
-**E — No playbook yet:** empty state explains we can’t flag against *their* standards; upload playbook or past contracts → propose → review → Activate; then Journey A works. Poisoned playbook cannot Activate.
-
----
-
-## What we are *not* building in MVP
-
-| Skip | Why |
+| Journey | Show |
 |---|---|
-| Streamlit rewrite / new stack for fun | We already have a UI plan |
-| Chat with the doc | Wrong product |
-| Fancy multi-step AI agents | After MVP |
-| Full enterprise security (hash chains, SSO, pen-test) | Demo lite + honest README |
-| Auto-changing the company playbook every time Sarah clicks Accept | Learning goes to memory / overrides; golden playbook only changes when she deliberately Activates a reviewed proposal |
-| Silent “AI risk flags” with no playbook | Trust requires citing company rules |
-| Hosted Railway/Vercel unless they ask | Zip / GitHub clone + local is enough ([`13-HANDOFF.md`](13-HANDOFF.md)) |
-| Fake “GDPR certified” badges | Don’t lie |
-| Docker / `.exe` as the only way to try | Ship venv; samples committed |
-
-Details: [01-PRD-MVP.md](01-PRD-MVP.md). How reviewers get the code: [13-HANDOFF.md](13-HANDOFF.md). How the running app fits together: [06-PRODUCT-MAP.md](06-PRODUCT-MAP.md). How to build: [02-MVP-IMPLEMENTATION.md](02-MVP-IMPLEMENTATION.md).
+| **A** | Sample → playbook flags → rewrite → Accept |
+| **B** | Prior Accept reused in draft, and/or Override respected next run |
+| **C** | Hostile sample → Security alert |
+| **E** | Empty playbook → propose → Activate → Journey A works |
 
 ---
 
-## Success checklist
+## MVP focus (in scope)
 
-- [ ] Journey A works (sample + upload)  
-- [ ] Flags cite playbook rules; “Needs human” when no fallback  
-- [ ] Accept / Edit / Reject + history  
-- [ ] Journey B demable  
-- [ ] Journey C demable  
-- [ ] Empty playbook = onboarding (not crash / not invented flags)  
-- [ ] Propose → Activate human gate (PDF path at minimum)  
-- [ ] Works with fake/offline AI mode  
-- [ ] README + handoff: clone/venv, samples included, no deploy required  
-- [ ] Short Loom  
+Playbook-cited first-pass review, lite security halt, decision memory / overrides, local zip or GitHub + venv delivery, Fake/offline fallback when needed. Post-MVP co-pilots: [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md). Future multi-agent vision: [`15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md`](15-LANGGRAPH-MULTI-AGENT-ARCHITECTURE.md).
 
 ---
 
-## Plain-English jargon
+## Jargon
 
 | Word | Means |
 |---|---|
-| **Playbook** | The company’s written “how we usually negotiate” rules |
-| **Activate** | Sarah confirms a proposed playbook — only then it becomes the live checklist |
-| **Closed-book** | AI may only use the playbook + this contract — not invent policy |
-| **Setup co-pilot** | AI helps draft a starter playbook; Sarah still owns governance |
-| **Fence** | Wrap contract text in tags so the model treats it as data, not orders |
-| **Prompt injection** | Hidden instructions inside a PDF to trick the AI |
-| **Override** | Sarah says “this variation is actually OK” → stored for next time |
+| **Playbook** | Company’s written negotiation rules |
+| **Activate** | Lawyer confirms a proposed playbook; only then it is live |
+| **Closed-book** | AI uses the playbook + this contract only |
+| **Fence** | Wrap contract text so the model treats it as data |
+| **Override** | Lawyer marks a variation OK; stored for next time |
 
 ---
 
-## Bottom line
+## Next reads
 
-**Set up the playbook (if needed) → upload → check playbook → flag/counter → decide → remember — with a basic shield against hostile PDFs.**
-
-That’s the take-home. Vision docs are the sequel, not the homework.
-
-**Local Ollama lawyer-assistant enhancements** (playbook propose, rewrite co-pilot, memory explain/rank, briefs, gaps): see [`09-OLLAMA-LAWYER-ASSISTANT-PRD.md`](09-OLLAMA-LAWYER-ASSISTANT-PRD.md).
+[`01-PRD-MVP.md`](01-PRD-MVP.md) · [`06-PRODUCT-MAP.md`](06-PRODUCT-MAP.md) · [`13-HANDOFF.md`](13-HANDOFF.md) · [`../README.md`](../README.md)

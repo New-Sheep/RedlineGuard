@@ -127,7 +127,7 @@ def bootstrap_meta() -> dict[str, Any]:
     if label == "ollama":
         model = str(getattr(settings, "OLLAMA_MODEL", os.environ.get("OLLAMA_MODEL", "")))
     elif label == "nvidia":
-        model = os.environ.get("NVIDIA_MODEL", "meta/llama-3.1-8b-instruct")
+        model = os.environ.get("NVIDIA_MODEL", "nvidia/nemotron-3.5-bolt-e4b")
     else:
         model = os.environ.get(f"{label.upper()}_MODEL", "") or os.environ.get(
             "LLM_MODEL", ""

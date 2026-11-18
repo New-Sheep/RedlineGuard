@@ -1,6 +1,8 @@
 # Lawyer API (thin JSON)
 
-Session auth required when `REQUIRE_AUTH=1` (default outside tests). Mutating calls need CSRF (`X-CSRFToken` or form token). Roles: **lawyer** (decide/undo/delete-one), **admin** (lab resets).
+**Purpose:** Route cheat sheet for session-auth JSON. Runbook: [`../README.md`](../README.md).
+
+Session auth when `REQUIRE_AUTH=1` (default outside tests). Mutating calls need CSRF (`X-CSRFToken` or form token). Roles: **lawyer** (decide/undo/delete-one), **admin** (lab resets).
 
 | Method | Path | Who | Purpose |
 |--------|------|-----|---------|
@@ -13,16 +15,14 @@ Session auth required when `REQUIRE_AUTH=1` (default outside tests). Mutating ca
 | GET | `/api/playbook/` | auth | Active playbook + versions |
 | POST | `/api/playbooks/activate-restore/` | lawyer | Body `{"version":"…"}` |
 | GET | `/api/security-events/` | auth | Security events |
-| GET | `/api/audit/` | auth | AuditEvent log (**never DELETE**) |
+| GET | `/api/audit/` | auth | AuditEvent log (append-only) |
 | GET | `/api/memory/` | auth | Precedents |
 | DELETE | `/api/memory/<id>/` | lawyer | Unlearn |
-| POST | `/api/admin/reset-decisions/` | admin | Body `{"confirm":"RESET"}` — Decisions + Chroma |
+| POST | `/api/admin/reset-decisions/` | admin | `{"confirm":"RESET"}` (Decisions + Chroma) |
 | POST | `/api/admin/reset-contracts/` | admin | `{"confirm":"RESET"}` |
 | POST | `/api/admin/reset-overrides/` | admin | `{"confirm":"RESET"}` |
 | POST | `/api/admin/reset-onboarding/` | admin | `{"confirm":"RESET"}` |
 
 HTML: `/login/`, `/onboarding/`, `/contracts/`, `/history/`, `/audit/`, `/help/`, `/trust/`, `/memory/`, `/playbook/`, `/lab/`.
 
-Demo users: `python manage.py bootstrap_demo_users` → `lawyer` / `lawyer-demo-2026`, `admin` / `admin-demo-2026`.
-
-How to run the whole app for a first-time reviewer: [`13-HANDOFF.md`](13-HANDOFF.md).
+Demo users (`bootstrap_demo_users`): `lawyer` / `lawyer-demo-2026`, `admin` / `admin-demo-2026`.
